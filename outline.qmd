@@ -6,23 +6,17 @@ theme: theme.scss
 execute: 
   message: false
   warning: false
-
 ---
 
 # Lessons
 
-The first set of lessons will work with `{flextable}`.
-The second set of lessons will cover the same topics but will use `{reactable}` instead.
-This way, students learn one package with good export capability to MS Office and one package for interactive tables.
+The first set of lessons will work with `{flextable}`. The second set of lessons will cover the same topics but will use `{reactable}` instead. This way, students learn one package with good export capability to MS Office and one package for interactive tables.
 
 ## Lesson 1: Get data into right format
 
 ### Video Overview
 
-The first lesson is about getting the data to the right format before we can even begin to build the table.
-Regardless of what package you use to create the table, it will just take your data frame and put it into a table as it is.
-Thus, you need to rearrange that data in your data frame before even calling, say, `flextable()`.
-
+The first lesson is about getting the data to the right format before we can even begin to build the table. Regardless of what package you use to create the table, it will just take your data frame and put it into a table as it is. Thus, you need to rearrange that data in your data frame before even calling, say, `flextable()`.
 
 The most powerful function to get this job done are `pivot_wider()` and `pivot_longer()`, they are able to transition the data frame from long format to white format and vice versa.
 
@@ -85,22 +79,15 @@ selected_countries <- gapminder_data  |>
 selected_countries
 ```
 
-
-
 ### Code and Video solutions
 
-
-
-
 ### Learn more
-
 
 ## Lesson 2: Avoid vertical lines with `flextable()`
 
 ### Video Overview
 
-Call `flextable()` and review that it's good to avoid vertical lines.
-Also, call `autofit()` so that column widths are adjust to some optimum.
+Call `flextable()` and review that it's good to avoid vertical lines. Also, call `autofit()` so that column widths are adjust to some optimum.
 
 ```{r}
 library(flextable)
@@ -118,29 +105,17 @@ selected_countries |>
   autofit()
 ```
 
-
-
 ### Code and Video solutions
 
 ### Learn more
-
-
-
-
 
 ## Lesson 3: Use better column names and a title
 
 ### Video Overview
 
-Next up, we need to use better column names. 
-That's because `flextable()` prints a data frame as is.
-Consequently, column names may not really be human readable at all. 
-For example, column names may contain underscores or some other kind of unusual notation.
+Next up, we need to use better column names. That's because `flextable()` prints a data frame as is. Consequently, column names may not really be human readable at all. For example, column names may contain underscores or some other kind of unusual notation.
 
-While we're at it, we should avoid duplicating a lot of column names. 
-For example, in this example, we see that we always repeat the species name. 
-To avoid that it's best to add a novel row of so-called spanners.
-Furthermore, we should add one more important label, i.e. a title.
+While we're at it, we should avoid duplicating a lot of column names. For example, in this example, we see that we always repeat the species name. To avoid that it's best to add a novel row of so-called spanners. Furthermore, we should add one more important label, i.e. a title.
 
 ```{r}
 flextable(penguin_counts_wider) |> 
@@ -164,9 +139,7 @@ flextable(penguin_counts_wider) |>
   autofit()
 ```
 
-
 Alternative
-
 
 ```{r}
 new_names <- c('Island', 'Year', rep(c('Female', 'Male'), 3))
@@ -185,7 +158,6 @@ flextable(penguin_counts_wider) |>
   ) |> 
   autofit()
 ```
-
 
 ### Your Turn Exercise
 
@@ -212,7 +184,6 @@ selected_countries |>
   autofit()
 ```
 
-
 ```{r}
 new_names <- c('', '', seq(1957, 2007, 10))
 names(new_names) <- colnames(selected_countries)
@@ -231,8 +202,6 @@ selected_countries |>
 
 ```
 
-
-
 ### Code and Video solutions
 
 ### Learn more
@@ -241,19 +210,11 @@ selected_countries |>
 
 ### Video Overview
 
-Next step is to align columns.
-As you as you can see, for example, in our spanners, the cells use right aligned texts. 
-That's not particularly nice to read, especially because this species name should always refer to the two cells below it. 
-So it would be great if the text in that cell is centered. 
+Next step is to align columns. As you as you can see, for example, in our spanners, the cells use right aligned texts. That's not particularly nice to read, especially because this species name should always refer to the two cells below it. So it would be great if the text in that cell is centered.
 
-For readability of your tables certain data types should use different alignments. 
-For example, for texts it's best if you use left alignment. 
-That's because we read from left to right and if all the texts are aligned at the same vertical line, then it's easier to read.
-Otherwise, our eyes always have to find the beginning of the next line.
+For readability of your tables certain data types should use different alignments. For example, for texts it's best if you use left alignment. That's because we read from left to right and if all the texts are aligned at the same vertical line, then it's easier to read. Otherwise, our eyes always have to find the beginning of the next line.
 
-For numbers it's different.
-There, you should move everything to the right.
-This way, you can easily compare digits one by one.
+For numbers it's different. There, you should move everything to the right. This way, you can easily compare digits one by one.
 
 ```{r}
 flextable(penguin_counts_wider) |> 
@@ -299,7 +260,6 @@ selected_countries |>
   autofit()
 ```
 
-
 ### Code and Video solutions
 
 ### Learn more
@@ -308,15 +268,9 @@ selected_countries |>
 
 ### Video Overview
 
-Next, it's better to use groups instead of repetitive columns. 
-For instance, the island column repeats itself multiple times before we move on to the next island name.
-This is a doesn't really look good. 
-And it would be nice if we can just make it visually clearer that certain rows belong to certain islands.
+Next, it's better to use groups instead of repetitive columns. For instance, the island column repeats itself multiple times before we move on to the next island name. This is a doesn't really look good. And it would be nice if we can just make it visually clearer that certain rows belong to certain islands.
 
-The way to do that is to use groups. 
-This means that we have rows (one for each island) that spans all of the columns.
-Here, we'll transition to `as_flextable()` because I like `hide_grouplabel`.
-But I'll show the `flextable()` version before that.
+The way to do that is to use groups. This means that we have rows (one for each island) that spans all of the columns. Here, we'll transition to `as_flextable()` because I like `hide_grouplabel`. But I'll show the `flextable()` version before that.
 
 ```{r}
 penguin_counts_wider |> 
@@ -365,7 +319,6 @@ selected_countries |>
   autofit()
 ```
 
-
 ### Code and Video solutions
 
 ### Learn more
@@ -374,13 +327,9 @@ selected_countries |>
 
 ### Video Overview
 
-Notice that our table contains a lot of missing numbers. 
-That's fine but leaving a lot of white space may be off putting to the reader. 
-So, let's add small dashes to the empty cells.
+Notice that our table contains a lot of missing numbers. That's fine but leaving a lot of white space may be off putting to the reader. So, let's add small dashes to the empty cells.
 
-This demonstrates how to format missing numbers, but it also explains how format any kind of data.
-Also, this will introduce formulas for selecting specific cells in the table.
-
+This demonstrates how to format missing numbers, but it also explains how format any kind of data. Also, this will introduce formulas for selecting specific cells in the table.
 
 ```{r}
 penguin_counts_wider |> 
@@ -433,7 +382,6 @@ selected_countries |>
   autofit()
 ```
 
-
 ### Code and Video solutions
 
 ### Learn more
@@ -442,8 +390,7 @@ selected_countries |>
 
 ### Video Overview
 
-It's always good to not just show the data, but to also to show a summary of the data. 
-In this case, it could be something as simple as the  maximum number of penguins of a specific species living on an island over the years.
+It's always good to not just show the data, but to also to show a summary of the data. In this case, it could be something as simple as the maximum number of penguins of a specific species living on an island over the years.
 
 ```{r}
 
@@ -532,19 +479,15 @@ selected_countries |>
   autofit()
 ```
 
-
-
 ### Code and Video solutions
 
 ### Learn more
-
 
 ## Lesson 8: Add additional horizontal lines
 
 ### Video Overview
 
-We've arrived at the probably the most fun lesson in this part of the course which is about theming and making the table more pretty.
-We'll start by adding more lines to distinguish our summaries from the rest.
+We've arrived at the probably the most fun lesson in this part of the course which is about theming and making the table more pretty. We'll start by adding more lines to distinguish our summaries from the rest.
 
 ```{r}
 bind_rows(penguin_counts_wider, maximum_summary, total_summary) |> 
@@ -579,9 +522,7 @@ bind_rows(penguin_counts_wider, maximum_summary, total_summary) |>
   autofit()
 ```
 
-
 ### Your Turn Exercise
-
 
 ```{r}
 selected_countries |> 
@@ -605,19 +546,15 @@ selected_countries |>
   autofit()
 ```
 
-
 ### Code and Video solutions
 
 ### Learn more
-
-
 
 ## Lesson 9: Add background colors
 
 ### Video Overview
 
-Next, we want to bring a little bit color into our table. 
-Right now it's all black and white and this looks really dull.
+Next, we want to bring a little bit color into our table. Right now it's all black and white and this looks really dull.
 
 ```{r}
 bind_rows(penguin_counts_wider, maximum_summary, total_summary) |> 
@@ -654,9 +591,7 @@ bind_rows(penguin_counts_wider, maximum_summary, total_summary) |>
   autofit()
 ```
 
-
 ### Your Turn Exercise
-
 
 ```{r}
 selected_countries |> 
@@ -682,13 +617,9 @@ selected_countries |>
   autofit() 
 ```
 
-
 ### Code and Video solutions
 
 ### Learn more
-
-
-
 
 ## Lesson 10: Change text appearance
 
@@ -757,9 +688,7 @@ bind_rows(penguin_counts_wider, maximum_summary, total_summary) |>
   autofit()
 ```
 
-
 ### Your Turn Exercise
-
 
 ```{r}
 selected_countries |> 
@@ -808,8 +737,6 @@ selected_countries |>
 ### Code and Video solutions
 
 ### Learn more
-
-
 
 ## Lesson 11: Change cell properties
 
@@ -897,9 +824,7 @@ final_table <- bind_rows(penguin_counts_wider, maximum_summary, total_summary) |
 final_table
 ```
 
-
 ### Your Turn Exercise
-
 
 ```{r}
 final_table_exercises <- selected_countries |> 
@@ -962,13 +887,11 @@ final_table_exercises <- selected_countries |>
 final_table_exercises
 ```
 
-
 ### Code and Video solutions
 
 ### Learn more
 
-
-## Lesson 12: Export 
+## Lesson 12: Export
 
 ### Video Overview
 
@@ -992,10 +915,9 @@ save_as_image(
 # You have to manually tweak this.
 save_as_pptx(
   final_table,
-  path = 'table.pptx'
+  path = 'final_table.pptx'
 )
 ```
-
 
 ### Your Turn Exercise
 
@@ -1021,7 +943,6 @@ save_as_pptx(
 )
 ```
 
-
 ### Code and Video solutions
 
 ### Learn more
@@ -1030,9 +951,7 @@ save_as_pptx(
 
 ### Video Overview
 
-This lesson covers heat maps. 
-These are tables where one, multiple or all cells have a background color which is chosen according to some numeric value
-Heat maps are great for helping your reader find the important values or the high or low values immediately.
+This lesson covers heat maps. These are tables where one, multiple or all cells have a background color which is chosen according to some numeric value Heat maps are great for helping your reader find the important values or the high or low values immediately.
 
 ```{r}
 bg_color_fct <- scales::col_numeric(palette = "viridis", domain = c(0, 30), na.color = 'white')
@@ -1043,7 +962,6 @@ final_table |>
   bg(i = ~(year %in% 2007:2009), j = 2:7, bg = bg_color_fct, source = 3:8) |> 
   color(i = ~(year %in% 2007:2009), j = 2:7, color = text_color_fct,source = 3:8) 
 ```
-
 
 ### Your Turn Exercise
 
@@ -1057,7 +975,6 @@ final_table_exercises |>
   color(i = ~!(country %in% c('Average', 'Maximum')), j = c(2, 7), color = text_color_fct, source = c(3, 8)) 
 ```
 
-
 ### Code and Video solutions
 
 ### Learn more
@@ -1066,8 +983,7 @@ final_table_exercises |>
 
 ### Video Overview
 
-Sparklines are small lines that help you to find trends in the data really fast. 
-By now, they're one of the standard tricks in the table trade.
+Sparklines are small lines that help you to find trends in the data really fast. By now, they're one of the standard tricks in the table trade.
 
 ```{r}
 counts_over_time <- penguin_counts |> 
@@ -1104,9 +1020,7 @@ penguin_mass |>
   )
 ```
 
-
 ### Your Turn Exercise
-
 
 ```{r}
 life_exp_over_time <- gapminder_data |> 
@@ -1181,11 +1095,9 @@ selected_countries |>
 
 ```
 
-
 ### Code and Video solutions
 
 ### Learn more
-
 
 ## Lesson 15: Add your own ggplot
 
@@ -1221,7 +1133,6 @@ penguin_mass |>
   )
 ```
 
-
 ```{r}
 gg_density_box_plot <- function(weights) {
   ggplot(mapping = aes(x = weights)) +
@@ -1249,7 +1160,6 @@ penguin_mass |>
 
 ```
 
-
 ### Your Turn Exercise
 
 ### Code and Video solutions
@@ -1257,7 +1167,6 @@ penguin_mass |>
 ### Learn more
 
 Images and some more mini charts at https://ardata-fr.github.io/flextable-book/cell-content-1.html#images
-
 
 ## Lesson 16: Case study (Either a long video or split into parts)
 
@@ -1267,8 +1176,7 @@ Take a NYT table or something from FiveThirtyEight
 
 ### Your Turn Exercise
 
-Will there be a Your Turn?
-Or is it just follow along?
+Will there be a Your Turn? Or is it just follow along?
 
 ### Code and Video solutions
 
@@ -1276,7 +1184,6 @@ Or is it just follow along?
 
 ## Lessons 17-33: Same stuff but for {reactable}
 
-Same data set as before for consistency + one-to-one comparison?
-Or new data set for novelty?
+Same data set as before for consistency + one-to-one comparison? Or new data set for novelty?
 
 ## Lessons 33-35: Maybe some interactive specifics
