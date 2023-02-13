@@ -1,0 +1,366 @@
+---
+title: "Creating beautiful tables with `{flextable}`"
+format: 
+  revealjs:
+    theme: custom_rrus.scss
+    menu: false
+    progress: true
+    slide-number: true
+    show-slide-number: print
+    center: true # This is my personal style (will remove if not okay)
+execute: 
+  message: false
+  warning: false
+title-slide-attributes:
+  data-background-image: "https://raw.githubusercontent.com/rfortherestofus/rfortherestofus/main/inst/assets/rru-hex-bg-gradient-dark.svg"
+  data-background-size: cover
+---
+
+
+## About me
+```{r}
+# Overwrite flextable output to export table as image and
+# include it as image
+knit_print.flextable <- function(x, options) {
+  # Requires tbl.cap (not tbl-cap as is usual in Quarto)
+  full_name <- paste0('img/', options$tbl.cap, '.png')
+  x |> 
+    flextable::save_as_image(path = full_name, webshot = 'webshot2')
+  
+  knitr::include_graphics(full_name)
+}
+
+registerS3method(
+  "knit_print", 'flextable', knit_print.flextable, 
+  envir = asNamespace("flextable") 
+  # important to overwrite {flextable}s knit_print
+)
+
+```
+
+
+::: notes
+I'll introduce myself here.
+2 min tops.
+:::
+
+## Where I've come from
+
+::: panel-tabset
+### Data
+
+```{r}
+#| echo: true
+library(tidyverse)
+penguins <- palmerpenguins::penguins |> 
+  filter(!is.na(sex))
+penguins
+```
+
+### My bad table
+
+Bad table that I would have created in the past.
+:::
+
+## Avoid vertical lines with `flextable()`
+
+```{r}
+penguin_counts <- penguins |> 
+  mutate(year = as.character(year)) |> 
+  group_by(species, island, sex, year) |> 
+  summarise(n = n(), .groups = 'drop')
+
+
+penguin_counts_wider <- penguin_counts |> 
+  pivot_wider(
+    names_from = c(species, sex),
+    values_from = n
+  ) |> 
+  arrange(island, year) 
+knitr::opts_chunk$set("ft.shadow" = FALSE)
+```
+
+```{r}
+#| tbl.cap: first_flextable
+
+library(flextable)
+library(officer) # Load as well for later theming.
+
+flextable(penguin_counts_wider) |> 
+  autofit()
+```
+
+## Use better column names and a title
+
+```{r}
+#| tbl.cap: better_name_flextable
+new_names <- c('Island', 'Year', rep(c('Female', 'Male'), 3))
+names(new_names) <- colnames(penguin_counts_wider)
+
+flextable(penguin_counts_wider) |> 
+  set_header_labels(
+    values = new_names
+  ) |> 
+  add_header_row(
+    values = c('', 'Adelie', 'Chinstrap', 'Gentoo'),
+    colwidths = c(2, 2, 2, 2)
+  ) |> 
+  add_header_lines(
+    values = c('Penguins in the Palmer Archipelago', 'Data is courtesy of the {palmerpenguins} R package')
+  ) |> 
+  autofit()
+```
+
+## Align columns
+
+```{r}
+#| tbl.cap: columns_aligned
+flextable(penguin_counts_wider) |> 
+  set_header_labels(
+    island = 'Island',
+    year = 'Year',
+    Adelie_female = 'Female',
+    Adelie_male = 'Male',
+    Chinstrap_female = 'Female',
+    Chinstrap_male = 'Male',
+    Gentoo_female = 'Female',
+    Gentoo_male = 'Male'
+  ) |> 
+  add_header_row(
+    values = c('', 'Adelie', 'Chinstrap', 'Gentoo'),
+    colwidths = c(2, 2, 2, 2)
+  ) |> 
+  add_header_lines(
+    values = c('Penguins in the Palmer Archipelago', 'Data is courtesy of the {palmerpenguins} R package')
+  ) |> 
+  align(i = 3, align = 'center', part = 'header') |> 
+  # it's already left-aligned but for demo purposes we do it again
+  align(j = 'year', align = 'right', part = 'body') |> 
+  autofit()
+```
+
+## Use groups instead of repetitive columns
+
+```{r}
+#| tbl.cap: grouped_columns
+penguin_counts_wider |> 
+  mutate(island = paste('Island: ', island)) |> 
+  as_grouped_data(
+    groups = 'island'
+  ) |> 
+  as_flextable(hide_grouplabel = TRUE) |> 
+  set_header_labels(
+    island = 'Island',
+    year = '',
+    Adelie_female = 'Female',
+    Adelie_male = 'Male',
+    Chinstrap_female = 'Female',
+    Chinstrap_male = 'Male',
+    Gentoo_female = 'Female',
+    Gentoo_male = 'Male'
+  ) |> 
+  add_header_row(
+    values = c('', 'Adelie', 'Chinstrap', 'Gentoo'),
+    colwidths = c(1, 2, 2, 2)
+  ) |> 
+  add_header_lines(
+    values = c('Penguins in the Palmer Archipelago', 'Data is courtesy of the {palmerpenguins} R package')
+  ) |> 
+  align(i = 3, align = 'center', part = 'header') |> 
+  autofit()
+```
+
+::: notes
+This lets us also remove the `year` label
+:::
+
+## Format missing numbers
+
+```{r}
+#| tbl.cap: format_missing_numbers
+penguin_counts_wider |> 
+  mutate(island = paste('Island: ', island)) |> 
+  as_grouped_data(
+    groups = 'island'
+  ) |> 
+  as_flextable(hide_grouplabel = TRUE) |> 
+  set_header_labels(
+    island = 'Island',
+    year = '',
+    Adelie_female = 'Female',
+    Adelie_male = 'Male',
+    Chinstrap_female = 'Female',
+    Chinstrap_male = 'Male',
+    Gentoo_female = 'Female',
+    Gentoo_male = 'Male'
+  ) |> 
+  add_header_row(
+    values = c('', 'Adelie', 'Chinstrap', 'Gentoo'),
+    colwidths = c(1, 2, 2, 2)
+  ) |> 
+  add_header_lines(
+    values = 'Penguins in the Palmer Archipelago\nData is courtesy of the {palmerpenguins} R package'
+  ) |> 
+  align(i = 2, align = 'center', part = 'header') |> 
+  colformat_num(i = ~ (is.na(island)), na_str = '-') |> 
+  autofit()
+```
+
+## Add summaries
+
+```{r}
+#| tbl.cap: add_summaries
+
+maximum_summary <- penguin_counts_wider |> 
+  group_by(island) |> 
+  summarise(across(
+    .cols = -year,
+    .fns = max
+  )) |> 
+  mutate(year = 'Maximum')
+
+total_summary <- penguin_counts_wider |> 
+  group_by(island) |> 
+  summarise(across(
+    .cols = -year,
+    .fns = sum
+  )) |> 
+  mutate(year = 'Total')
+  
+
+bind_rows(penguin_counts_wider, maximum_summary, total_summary) |> 
+  mutate(island = paste('Island: ', island)) |> 
+  arrange(island, year) |> 
+  as_grouped_data(groups = 'island') |> 
+  as_flextable(hide_grouplabel = TRUE) |> 
+  set_header_labels(
+    island = 'Island',
+    year = '',
+    Adelie_female = 'Female',
+    Adelie_male = 'Male',
+    Chinstrap_female = 'Female',
+    Chinstrap_male = 'Male',
+    Gentoo_female = 'Female',
+    Gentoo_male = 'Male'
+  ) |> 
+  add_header_row(
+    values = c('', 'Adelie', 'Chinstrap', 'Gentoo'),
+    colwidths = c(1, 2, 2, 2)
+  ) |> 
+  add_header_lines(
+    values = c('Penguins in the Palmer Archipelago', 'Data is courtesy of the {palmerpenguins} R package')
+  ) |> 
+  align(i = 3, align = 'center', part = 'header') |> 
+  colformat_num(i = ~ (is.na(island)), na_str = '-') |> 
+  align(
+    i = ~ (year %in% 2007:2009),
+    j = 'year',
+    align = 'right'
+  ) |> 
+  autofit()
+```
+
+## Style your table
+
+```{r}
+#| tbl.cap: adjust_cell_properties
+final_table <- bind_rows(penguin_counts_wider, maximum_summary, total_summary) |> 
+  arrange(island, year) |> 
+  mutate(island = paste('Island: ', island)) |> 
+  as_grouped_data(groups = 'island') |> 
+  as_flextable(hide_grouplabel = TRUE) |> 
+  set_header_labels(
+    island = 'Island',
+    year = '',
+    Adelie_female = 'Female',
+    Adelie_male = 'Male',
+    Chinstrap_female = 'Female',
+    Chinstrap_male = 'Male',
+    Gentoo_female = 'Female',
+    Gentoo_male = 'Male'
+  ) |> 
+  add_header_row(
+    values = c('', 'Adelie', 'Chinstrap', 'Gentoo'),
+    colwidths = c(1, 2, 2, 2)
+  ) |> 
+  add_header_lines(
+    values = c('Penguins in the Palmer Archipelago', 'Data is courtesy of the {palmerpenguins} R package')
+  ) |> 
+  align(i = 3, align = 'center', part = 'header') |> 
+  colformat_num(i = ~ (is.na(island)), na_str = '-') |> 
+  align(
+    i = ~ (year %in% 2007:2009),
+    j = 'year',
+    align = 'right'
+  ) |> 
+  hline(i = ~ (!is.na(island) | year %in% c('2009', 'Total')), border = fp_border(width = 1, color = 'grey40')) |> 
+  bg(i = 3:4, bg = 'dodgerblue4', part = 'header') |> 
+  bg(i = ~ (year %in% seq(2007, 2009, 2)), bg = 'grey90') |> 
+  bold(part = 'header', i = 3) |> 
+  color(i = 3:4, part = 'header', color = 'white') |> 
+  border(j = 'year', border.right = fp_border(color = 'grey40', width = 1)) |> 
+  style( #### subtitle
+    part = 'header',
+    i = 2,
+    pr_t = fp_text(font.size = 11),
+    ### This part is added 
+    pr_c = fp_cell(border = fp_border(width = 0, color = 'grey40'))
+  ) |>
+  style( ### title
+    part = 'header',
+    i = 1,
+    pr_t = fp_text(
+      color = 'dodgerblue4',
+      font.size = 18,
+      font.family = 'Merriweather',
+      bold = TRUE
+    ),
+    ### This part is added 
+    pr_c = fp_cell(
+      border.top = fp_border(width = 1.5, color = 'grey40'),
+      border.bottom = fp_border(width = 0, color = 'grey40')
+    )
+  ) |> 
+  style( ### group rows
+    i = ~ (!is.na(island)),
+    ### This part is added 
+    pr_c = fp_cell(
+      border.top = fp_border(width = 1, color = 'grey40'),
+      border.bottom = fp_border(width = 1, color = 'grey40'),
+      border.right = fp_border(width = 0, color = 'grey40')
+    ),
+    pr_t = fp_text(
+      color = 'dodgerblue4',
+      bold = TRUE,
+      font.size = 12,
+    )
+  ) |> 
+  line_spacing(part= 'all', space = 0.9) |> 
+  ### This part is added 
+  hline(part = 'header', i = 2, border = fp_border(width = 0)) |> 
+  hline(part = 'header', i = 3, border = fp_border(width = 0)) |> 
+  autofit()
+final_table
+```
+
+::: notes
+-   Horizontal lines for more structure
+-   Background colors
+-   Text appearance (font, color, size)
+-   Adjust cell properties (some borders)
+:::
+
+# Sample Inverse {.inverse}
+
+## Sample My Turn {.my-turn}
+
+Exercitation consectetur sit excepteur cillum ad irure labore pariatur incididunt.
+Esse enim mollit velit nulla eiusmod consectetur occaecat laborum excepteur eu laborum enim pariatur do.
+Eiusmod exercitation minim incididunt nisi Lorem.
+Consectetur irure laboris est id aliquip Lorem.
+Minim et minim tempor ut aute minim.
+Velit non officia nisi proident enim sint.
+Nisi irure eu reprehenderit duis laboris amet velit velit consectetur magna quis.
+Veniam quis incididunt do non ipsum.
+Ut deserunt dolore sint aliquip ex deserunt eiusmod cillum ut.
+Qui sit officia in voluptate officia qui enim eiusmod id dolor incididunt est.

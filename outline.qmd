@@ -10,13 +10,13 @@ execute:
 
 # Lessons
 
-The first set of lessons will work with `{flextable}`. The second set of lessons will cover the same topics but will use `{reactable}` instead. This way, students learn one package with good export capability to MS Office and one package for interactive tables.
-
 ## Lesson 1: Get data into right format
 
 ### Video Overview
 
-The first lesson is about getting the data to the right format before we can even begin to build the table. Regardless of what package you use to create the table, it will just take your data frame and put it into a table as it is. Thus, you need to rearrange that data in your data frame before even calling, say, `flextable()`.
+The first lesson is about getting the data to the right format before we can even begin to build the table.
+Regardless of what package you use to create the table, it will just take your data frame and put it into a table as it is.
+Thus, you need to rearrange that data in your data frame before even calling, say, `flextable()`.
 
 The most powerful function to get this job done are `pivot_wider()` and `pivot_longer()`, they are able to transition the data frame from long format to white format and vice versa.
 
@@ -50,35 +50,6 @@ penguin_counts_wider |>
   )
 ```
 
-### Your Turn Exercise
-
-```{r}
-gapminder_data <- gapminder::gapminder |> 
-  janitor::clean_names() |> 
-  select(continent, country, year, life_exp) |> 
-  mutate(
-    year = as.character(year),
-    # Year is really categorical with numeric labels
-    country = as.character(country) 
-  ) 
-gapminder_data
-
-set.seed(34534)
-selected_countries <- gapminder_data  |> 
-# Filter to use only six years (those that end in 7)
-  filter(str_ends(year, "7")) |>
-# sample two countries per continent
-  group_by(continent, country) |> 
-  nest() |> 
-  group_by(continent) |> 
-  slice_sample(n = 2) |> 
-  ungroup() |> 
-  unnest(data) |> 
-# Rearrange the data into table format
-  pivot_wider(names_from = year, names_prefix = 'year', values_from = life_exp)
-selected_countries
-```
-
 ### Code and Video solutions
 
 ### Learn more
@@ -87,21 +58,14 @@ selected_countries
 
 ### Video Overview
 
-Call `flextable()` and review that it's good to avoid vertical lines. Also, call `autofit()` so that column widths are adjust to some optimum.
+Call `flextable()` and review that it's good to avoid vertical lines.
+Also, call `autofit()` so that column widths are adjust to some optimum.
 
 ```{r}
 library(flextable)
 library(officer) # Load as well for later theming.
 
 flextable(penguin_counts_wider) |> 
-  autofit()
-```
-
-### Your Turn Exercise
-
-```{r}
-selected_countries |> 
-  flextable() |> 
   autofit()
 ```
 
@@ -113,9 +77,15 @@ selected_countries |>
 
 ### Video Overview
 
-Next up, we need to use better column names. That's because `flextable()` prints a data frame as is. Consequently, column names may not really be human readable at all. For example, column names may contain underscores or some other kind of unusual notation.
+Next up, we need to use better column names.
+That's because `flextable()` prints a data frame as is.
+Consequently, column names may not really be human readable at all.
+For example, column names may contain underscores or some other kind of unusual notation.
 
-While we're at it, we should avoid duplicating a lot of column names. For example, in this example, we see that we always repeat the species name. To avoid that it's best to add a novel row of so-called spanners. Furthermore, we should add one more important label, i.e. a title.
+While we're at it, we should avoid duplicating a lot of column names.
+For example, in this example, we see that we always repeat the species name.
+To avoid that it's best to add a novel row of so-called spanners.
+Furthermore, we should add one more important label, i.e. a title.
 
 ```{r}
 flextable(penguin_counts_wider) |> 
@@ -159,49 +129,6 @@ flextable(penguin_counts_wider) |>
   autofit()
 ```
 
-### Your Turn Exercise
-
-```{r}
-selected_countries |> 
-  flextable() |> 
-  set_header_labels(
-    continent = '',
-    country = '',
-    year1957 = '1957',
-    year1967 = '1967',
-    year1977 = '1977',
-    year1987 = '1987',
-    year1997 = '1997',
-    year2007 = '2007'
-  ) |> 
-  add_header_row(
-    values = c('', '50s-70s', '80s-20s'),
-    colwidths = c(2, 3, 3)
-  ) |> 
-  add_header_lines(
-    values = c('Life expectancties over time', 'Data is courtesy of the {gapminder} R package')
-  ) |> 
-  autofit()
-```
-
-```{r}
-new_names <- c('', '', seq(1957, 2007, 10))
-names(new_names) <- colnames(selected_countries)
-
-selected_countries |> 
-  flextable() |> 
-  set_header_labels(values = new_names) |> 
-  add_header_row(
-    values = c('', '50s-70s', '80s-20s'),
-    colwidths = c(2, 3, 3)
-  ) |> 
-  add_header_lines(
-    values = c('Life expectancties over time', 'Data is courtesy of the {gapminder} R package')
-  ) |> 
-  autofit()
-
-```
-
 ### Code and Video solutions
 
 ### Learn more
@@ -210,11 +137,19 @@ selected_countries |>
 
 ### Video Overview
 
-Next step is to align columns. As you as you can see, for example, in our spanners, the cells use right aligned texts. That's not particularly nice to read, especially because this species name should always refer to the two cells below it. So it would be great if the text in that cell is centered.
+Next step is to align columns.
+As you as you can see, for example, in our spanners, the cells use right aligned texts.
+That's not particularly nice to read, especially because this species name should always refer to the two cells below it.
+So it would be great if the text in that cell is centered.
 
-For readability of your tables certain data types should use different alignments. For example, for texts it's best if you use left alignment. That's because we read from left to right and if all the texts are aligned at the same vertical line, then it's easier to read. Otherwise, our eyes always have to find the beginning of the next line.
+For readability of your tables certain data types should use different alignments.
+For example, for texts it's best if you use left alignment.
+That's because we read from left to right and if all the texts are aligned at the same vertical line, then it's easier to read.
+Otherwise, our eyes always have to find the beginning of the next line.
 
-For numbers it's different. There, you should move everything to the right. This way, you can easily compare digits one by one.
+For numbers it's different.
+There, you should move everything to the right.
+This way, you can easily compare digits one by one.
 
 ```{r}
 flextable(penguin_counts_wider) |> 
@@ -241,25 +176,6 @@ flextable(penguin_counts_wider) |>
   autofit()
 ```
 
-### Your Turn Exercise
-
-Center the spanners
-
-```{r}
-selected_countries |> 
-  flextable() |> 
-  set_header_labels(values = new_names) |> 
-  add_header_row(
-    values = c('', '50s-70s', '80s-20s'),
-    colwidths = c(2, 3, 3)
-  ) |> 
-  add_header_lines(
-    values = c('Life expectancties over time', 'Data is courtesy of the {gapminder} R package')
-  ) |> 
-  align(i = 3, align = 'center', part = 'header') |> 
-  autofit()
-```
-
 ### Code and Video solutions
 
 ### Learn more
@@ -268,19 +184,26 @@ selected_countries |>
 
 ### Video Overview
 
-Next, it's better to use groups instead of repetitive columns. For instance, the island column repeats itself multiple times before we move on to the next island name. This is a doesn't really look good. And it would be nice if we can just make it visually clearer that certain rows belong to certain islands.
+Next, it's better to use groups instead of repetitive columns.
+For instance, the island column repeats itself multiple times before we move on to the next island name.
+This is a doesn't really look good.
+And it would be nice if we can just make it visually clearer that certain rows belong to certain islands.
 
-The way to do that is to use groups. This means that we have rows (one for each island) that spans all of the columns. Here, we'll transition to `as_flextable()` because I like `hide_grouplabel`. But I'll show the `flextable()` version before that.
+The way to do that is to use groups.
+This means that we have rows (one for each island) that spans all of the columns.
+Here, we'll transition to `as_flextable()` because I like `hide_grouplabel`.
+But I'll show the `flextable()` version before that.
 
 ```{r}
 penguin_counts_wider |> 
+  mutate(island = paste('Island: ', island)) |> 
   as_grouped_data(
     groups = 'island'
   ) |> 
   as_flextable(hide_grouplabel = TRUE) |> 
   set_header_labels(
     island = 'Island',
-    year = 'Year',
+    year = '',
     Adelie_female = 'Female',
     Adelie_male = 'Male',
     Chinstrap_female = 'Female',
@@ -299,47 +222,31 @@ penguin_counts_wider |>
   autofit()
 ```
 
-### Your Turn Exercise
-
-```{r}
-selected_countries |> 
-  as_grouped_data(
-    groups = 'continent'
-  ) |> 
-  as_flextable(hide_grouplabel = TRUE) |> 
-  set_header_labels(values = new_names) |> 
-  add_header_row(
-    values = c('', '50s-70s', '80s-20s'),
-    colwidths = c(1, 3, 3)
-  ) |> 
-  add_header_lines(
-    values = c('Life expectancties over time', 'Data is courtesy of the {gapminder} R package')
-  ) |> 
-  align(i = 3, align = 'center', part = 'header') |> 
-  autofit()
-```
-
 ### Code and Video solutions
 
 ### Learn more
 
-## Lesson 6: Make missing numbers into dashes (Maybe this is column formatting already)
+## Lesson 6: Format missing numbers
 
 ### Video Overview
 
-Notice that our table contains a lot of missing numbers. That's fine but leaving a lot of white space may be off putting to the reader. So, let's add small dashes to the empty cells.
+Notice that our table contains a lot of missing numbers.
+That's fine but leaving a lot of white space may be off putting to the reader.
+So, let's add small dashes to the empty cells.
 
-This demonstrates how to format missing numbers, but it also explains how format any kind of data. Also, this will introduce formulas for selecting specific cells in the table.
+This demonstrates how to format missing numbers, but it also explains how format any kind of data.
+Also, this will introduce formulas for selecting specific cells in the table.
 
 ```{r}
 penguin_counts_wider |> 
+  mutate(island = paste('Island: ', island)) |> 
   as_grouped_data(
     groups = 'island'
   ) |> 
   as_flextable(hide_grouplabel = TRUE) |> 
   set_header_labels(
     island = 'Island',
-    year = 'Year',
+    year = '',
     Adelie_female = 'Female',
     Adelie_male = 'Male',
     Chinstrap_female = 'Female',
@@ -359,29 +266,6 @@ penguin_counts_wider |>
   autofit()
 ```
 
-### Your Turn Exercise
-
-Format digits with `colformat_double()`.
-
-```{r}
-selected_countries |> 
-  as_grouped_data(
-    groups = 'continent'
-  ) |> 
-  as_flextable(hide_grouplabel = TRUE) |> 
-  set_header_labels(values = new_names) |> 
-  add_header_row(
-    values = c('', '50s-70s', '80s-20s'),
-    colwidths = c(1, 3, 3)
-  ) |> 
-  add_header_lines(
-    values = c('Life expectancties over time', 'Data is courtesy of the {gapminder} R package')
-  ) |> 
-  align(i = 3, align = 'center', part = 'header') |> 
-  colformat_double(digits = 2) |> 
-  autofit()
-```
-
 ### Code and Video solutions
 
 ### Learn more
@@ -390,7 +274,8 @@ selected_countries |>
 
 ### Video Overview
 
-It's always good to not just show the data, but to also to show a summary of the data. In this case, it could be something as simple as the maximum number of penguins of a specific species living on an island over the years.
+It's always good to not just show the data, but to also to show a summary of the data.
+In this case, it could be something as simple as the maximum number of penguins of a specific species living on an island over the years.
 
 ```{r}
 
@@ -412,12 +297,13 @@ total_summary <- penguin_counts_wider |>
   
 
 bind_rows(penguin_counts_wider, maximum_summary, total_summary) |> 
+  mutate(island = paste('Island: ', island)) |> 
   arrange(island, year) |> 
   as_grouped_data(groups = 'island') |> 
   as_flextable(hide_grouplabel = TRUE) |> 
   set_header_labels(
     island = 'Island',
-    year = 'Year',
+    year = '',
     Adelie_female = 'Female',
     Adelie_male = 'Male',
     Chinstrap_female = 'Female',
@@ -442,43 +328,6 @@ bind_rows(penguin_counts_wider, maximum_summary, total_summary) |>
   autofit()
 ```
 
-### Your Turn Exercise
-
-```{r}
-average_life_exps <- gapminder_data |> 
-  filter(country %in% selected_countries$country, str_ends(year, '7')) |> 
-  group_by(continent, year) |> 
-  summarise(Average = mean(life_exp), .groups = 'drop') |> 
-  pivot_wider(names_from = year, values_from = Average, names_prefix = 'year') |> 
-  mutate(country = 'Average', .before = 2)
-
-max_life_exps <- gapminder_data |> 
-  filter(country %in% selected_countries$country, str_ends(year, '7')) |> 
-  group_by(continent, year) |> 
-  summarise(Maximum = max(life_exp), .groups = 'drop') |> 
-  pivot_wider(names_from = year, values_from = Maximum, names_prefix = 'year') |> 
-  mutate(country = 'Maximum', .before = 2)
-
-selected_countries |> 
-  bind_rows(average_life_exps, max_life_exps) |> 
-  arrange(continent, country %in% c('Average', 'Maximum')) |> 
-  as_grouped_data(
-    groups = 'continent'
-  ) |> 
-  as_flextable(hide_grouplabel = TRUE) |> 
-  set_header_labels(values = new_names) |> 
-  add_header_row(
-    values = c('', '50s-70s', '80s-20s'),
-    colwidths = c(1, 3, 3)
-  ) |> 
-  add_header_lines(
-    values = c('Life expectancties over time', 'Data is courtesy of the {gapminder} R package')
-  ) |> 
-  align(i = 3, align = 'center', part = 'header') |> 
-  colformat_double(digits = 2) |> 
-  autofit()
-```
-
 ### Code and Video solutions
 
 ### Learn more
@@ -487,16 +336,18 @@ selected_countries |>
 
 ### Video Overview
 
-We've arrived at the probably the most fun lesson in this part of the course which is about theming and making the table more pretty. We'll start by adding more lines to distinguish our summaries from the rest.
+We've arrived at the probably the most fun lesson in this part of the course which is about theming and making the table more pretty.
+We'll start by adding more lines to distinguish our summaries from the rest.
 
 ```{r}
 bind_rows(penguin_counts_wider, maximum_summary, total_summary) |> 
+  mutate(island = paste('Island: ', island)) |> 
   arrange(island, year) |> 
   as_grouped_data(groups = 'island') |> 
   as_flextable(hide_grouplabel = TRUE) |> 
   set_header_labels(
     island = 'Island',
-    year = 'Year',
+    year = '',
     Adelie_female = 'Female',
     Adelie_male = 'Male',
     Chinstrap_female = 'Female',
@@ -522,30 +373,6 @@ bind_rows(penguin_counts_wider, maximum_summary, total_summary) |>
   autofit()
 ```
 
-### Your Turn Exercise
-
-```{r}
-selected_countries |> 
-  bind_rows(average_life_exps, max_life_exps) |> 
-  arrange(continent, country %in% c('Average', 'Maximum')) |> 
-  as_grouped_data(
-    groups = 'continent'
-  ) |> 
-  as_flextable(hide_grouplabel = TRUE) |> 
-  set_header_labels(values = new_names) |> 
-  add_header_row(
-    values = c('', '50s-70s', '80s-20s'),
-    colwidths = c(1, 3, 3)
-  ) |> 
-  add_header_lines(
-    values = c('Life expectancties over time', 'Data is courtesy of the {gapminder} R package')
-  ) |> 
-  align(i = 3, align = 'center', part = 'header') |> 
-  colformat_double(digits = 2) |> 
-  hline(i = ~ (!is.na(continent) | country == 'Maximum' | lead(country == 'Maximum', 2, default = FALSE))) |> 
-  autofit()
-```
-
 ### Code and Video solutions
 
 ### Learn more
@@ -554,16 +381,18 @@ selected_countries |>
 
 ### Video Overview
 
-Next, we want to bring a little bit color into our table. Right now it's all black and white and this looks really dull.
+Next, we want to bring a little bit color into our table.
+Right now it's all black and white and this looks really dull.
 
 ```{r}
 bind_rows(penguin_counts_wider, maximum_summary, total_summary) |> 
+  mutate(island = paste('Island: ', island)) |> 
   arrange(island, year) |> 
   as_grouped_data(groups = 'island') |> 
   as_flextable(hide_grouplabel = TRUE) |> 
   set_header_labels(
     island = 'Island',
-    year = 'Year',
+    year = '',
     Adelie_female = 'Female',
     Adelie_male = 'Male',
     Chinstrap_female = 'Female',
@@ -591,32 +420,6 @@ bind_rows(penguin_counts_wider, maximum_summary, total_summary) |>
   autofit()
 ```
 
-### Your Turn Exercise
-
-```{r}
-selected_countries |> 
-  bind_rows(average_life_exps, max_life_exps) |> 
-  arrange(continent, country %in% c('Average', 'Maximum')) |> 
-  as_grouped_data(
-    groups = 'continent'
-  ) |> 
-  as_flextable(hide_grouplabel = TRUE) |> 
-  set_header_labels(values = new_names) |> 
-  add_header_row(
-    values = c('', '50s-70s', '80s-20s'),
-    colwidths = c(1, 3, 3)
-  ) |> 
-  add_header_lines(
-    values = c('Life expectancties over time', 'Data is courtesy of the {gapminder} R package')
-  ) |> 
-  align(i = 3, align = 'center', part = 'header') |> 
-  colformat_double(digits = 2) |> 
-  hline(i = ~ (!is.na(continent) | country == 'Maximum' | lead(country == 'Maximum', 2, default = FALSE))) |> 
-  bg(i = ~ is.na(country), bg = 'dodgerblue4') |> 
-  bg(i = ~ (country %in% c('Average', 'Maximum')), bg = 'grey95') |> 
-  autofit() 
-```
-
 ### Code and Video solutions
 
 ### Learn more
@@ -635,7 +438,7 @@ bind_rows(penguin_counts_wider, maximum_summary, total_summary) |>
   as_flextable(hide_grouplabel = TRUE) |> 
   set_header_labels(
     island = 'Island',
-    year = 'Year',
+    year = '',
     Adelie_female = 'Female',
     Adelie_male = 'Male',
     Chinstrap_female = 'Female',
@@ -688,52 +491,6 @@ bind_rows(penguin_counts_wider, maximum_summary, total_summary) |>
   autofit()
 ```
 
-### Your Turn Exercise
-
-```{r}
-selected_countries |> 
-  bind_rows(average_life_exps, max_life_exps) |> 
-  arrange(continent, country %in% c('Average', 'Maximum')) |> 
-  as_grouped_data(
-    groups = 'continent'
-  ) |> 
-  as_flextable(hide_grouplabel = TRUE) |> 
-  set_header_labels(values = new_names) |> 
-  add_header_row(
-    values = c('', '50s-70s', '80s-20s'),
-    colwidths = c(1, 3, 3)
-  ) |> 
-  add_header_lines(
-    values = c('Life expectancties over time', 'Data is courtesy of the {gapminder} R package')
-  ) |> 
-  align(i = 3, align = 'center', part = 'header') |> 
-  colformat_double(digits = 2) |> 
-  hline(i = ~ (!is.na(continent) | country == 'Maximum' | lead(country == 'Maximum', 2, default = FALSE))) |> 
-  bg(i = ~ is.na(country), bg = 'dodgerblue4') |> 
-  bg(i = ~ (country %in% c('Average', 'Maximum')), bg = 'grey95') |> 
-  style(pr_t = fp_text(font.family = 'Source Sans Pro'), part = 'all') |> 
-  bold(part = 'header', i = 3) |> 
-  style( ### group rows
-    i = ~ (is.na(country)),
-    pr_t = fp_text(
-      color = 'white',
-      bold = TRUE,
-      font.size = 12,
-    )
-  ) |> 
-  style( ### title
-    part = 'header',
-    i = 1,
-    pr_t = fp_text(
-      color = 'dodgerblue4',
-      font.size = 18,
-      font.family = 'Source Sans Pro',
-      bold = TRUE
-    )
-  ) |> 
-  autofit() 
-```
-
 ### Code and Video solutions
 
 ### Learn more
@@ -752,7 +509,7 @@ final_table <- bind_rows(penguin_counts_wider, maximum_summary, total_summary) |
   as_flextable(hide_grouplabel = TRUE) |> 
   set_header_labels(
     island = 'Island',
-    year = 'Year',
+    year = '',
     Adelie_female = 'Female',
     Adelie_male = 'Male',
     Chinstrap_female = 'Female',
@@ -824,69 +581,6 @@ final_table <- bind_rows(penguin_counts_wider, maximum_summary, total_summary) |
 final_table
 ```
 
-### Your Turn Exercise
-
-```{r}
-final_table_exercises <- selected_countries |> 
-  bind_rows(average_life_exps, max_life_exps) |> 
-  arrange(continent, country %in% c('Average', 'Maximum')) |> 
-  as_grouped_data(
-    groups = 'continent'
-  ) |> 
-  as_flextable(hide_grouplabel = TRUE) |> 
-  set_header_labels(values = new_names) |> 
-  add_header_row(
-    values = c('', '50s-70s', '80s-20s'),
-    colwidths = c(1, 3, 3)
-  ) |> 
-  add_header_lines(
-    values = c('Life expectancties over time', 'Data is courtesy of the {gapminder} R package')
-  ) |> 
-  align(i = 3, align = 'center', part = 'header') |> 
-  colformat_double(digits = 2) |> 
-  hline(i = ~ (!is.na(continent) | country == 'Maximum' | lead(country == 'Maximum', 2, default = FALSE))) |> 
-  bg(i = ~ is.na(country), bg = 'dodgerblue4') |> 
-  bg(i = ~ (country %in% c('Average', 'Maximum')), bg = 'grey95') |> 
-  style(pr_t = fp_text(font.family = 'Source Sans Pro'), part = 'all') |> 
-  bold(part = 'header', i = 3) |> 
-  style( ### group rows
-    i = ~ (is.na(country)),
-    pr_t = fp_text(
-      color = 'white',
-      bold = TRUE,
-      font.size = 12,
-    )
-  ) |> 
-  style( ### title
-    part = 'header',
-    i = 1,
-    pr_t = fp_text(
-      color = 'dodgerblue4',
-      font.size = 18,
-      font.family = 'Source Sans Pro',
-      bold = TRUE
-    ),
-    pr_c = fp_cell(
-      border.top = fp_border(width = 1.5, color = 'grey40'),
-      border.bottom = fp_border(width = 0, color = 'grey40')
-    )
-  ) |> 
-  style( #### subtitle
-    part = 'header',
-    i = 2,
-    pr_t = fp_text(font.size = 11),
-    ### This part is added 
-    pr_c = fp_cell(border = fp_border(width = 0, color = 'grey40'))
-  ) |> 
-  line_spacing(part= 'all', space = 0.75) |> 
-  ### This part is added 
-  hline(part = 'header', i = 2, border = fp_border(width = 0)) |> 
-  hline(part = 'header', i = 3, border = fp_border(width = 0)) |> 
-  border(i = 3, j = 2:7, border.bottom = fp_border(width = 1, color = 'grey40'), part = 'header') |> 
-  autofit() 
-final_table_exercises
-```
-
 ### Code and Video solutions
 
 ### Learn more
@@ -915,31 +609,7 @@ save_as_image(
 # You have to manually tweak this.
 save_as_pptx(
   final_table,
-  path = 'final_table.pptx'
-)
-```
-
-### Your Turn Exercise
-
-```{r}
-save_as_docx(
-  final_table_exercises,
-  path = 'final_table_exercises.docx'
-)
-
-# Make sure that you have {webshot2} and phantomJS installed. The latter can be installed via {webshot2}
-save_as_image(
-  final_table_exercises,
-  path = 'final_table_exercises.png',
-  webshot = 'webshot2'
-)
-
-# Beware that in the output pptx file there can be empty cells that have huge font. 
-# This will cause the line heights of the cells to be large. 
-# You have to manually tweak this.
-save_as_pptx(
-  final_table_exercises,
-  path = 'final_table_exercises.pptx'
+  path = 'table.pptx'
 )
 ```
 
@@ -951,7 +621,8 @@ save_as_pptx(
 
 ### Video Overview
 
-This lesson covers heat maps. These are tables where one, multiple or all cells have a background color which is chosen according to some numeric value Heat maps are great for helping your reader find the important values or the high or low values immediately.
+This lesson covers heat maps.
+These are tables where one, multiple or all cells have a background color which is chosen according to some numeric value Heat maps are great for helping your reader find the important values or the high or low values immediately.
 
 ```{r}
 bg_color_fct <- scales::col_numeric(palette = "viridis", domain = c(0, 30), na.color = 'white')
@@ -963,18 +634,6 @@ final_table |>
   color(i = ~(year %in% 2007:2009), j = 2:7, color = text_color_fct,source = 3:8) 
 ```
 
-### Your Turn Exercise
-
-```{r}
-bg_color_fct <- scales::col_numeric(palette = "viridis", domain = c(0, 30, 85), na.color = 'white')
-text_color_fct <- function(x) if_else(x < 50 & !is.na(x), 'white', 'black')
-
-## Source needs to take the grouped data into account. That's why it's shifted by one.
-final_table_exercises |> 
-  bg(i = ~!(country %in% c('Average', 'Maximum')), j = c(2, 7), bg = bg_color_fct, source = c(3, 8)) |> 
-  color(i = ~!(country %in% c('Average', 'Maximum')), j = c(2, 7), color = text_color_fct, source = c(3, 8)) 
-```
-
 ### Code and Video solutions
 
 ### Learn more
@@ -983,7 +642,8 @@ final_table_exercises |>
 
 ### Video Overview
 
-Sparklines are small lines that help you to find trends in the data really fast. By now, they're one of the standard tricks in the table trade.
+Sparklines are small lines that help you to find trends in the data really fast.
+By now, they're one of the standard tricks in the table trade.
 
 ```{r}
 counts_over_time <- penguin_counts |> 
@@ -1018,81 +678,6 @@ penguin_mass |>
       )
     )
   )
-```
-
-### Your Turn Exercise
-
-```{r}
-life_exp_over_time <- gapminder_data |> 
-  filter(country %in% selected_countries$country, str_ends(year, '7')) |> 
-  group_by(country) |> 
-  summarise(life_exps = list(life_exp))
-
-
-selected_countries |> 
-  bind_rows(average_life_exps, max_life_exps) |> 
-  full_join(life_exp_over_time) |> 
-  arrange(continent, country %in% c('Average', 'Maximum')) |> 
-  as_grouped_data(
-    groups = 'continent'
-  ) |> 
-  as_flextable(hide_grouplabel = TRUE) |> 
-  set_header_labels(values = new_names) |> 
-  set_header_labels(life_exps = '') |> 
-  add_header_row(
-    values = c('', '50s-70s', '80s-20s', ''),
-    colwidths = c(1, 3, 3, 1)
-  ) |> 
-  add_header_lines(
-    values = c('Life expectancties over time', 'Data is courtesy of the {gapminder} R package')
-  ) |> 
-  align(i = 3, align = 'center', part = 'header') |> 
-  colformat_double(digits = 2) |> 
-  hline(i = ~ (!is.na(continent) | country == 'Maximum' | lead(country == 'Maximum', 2, default = FALSE))) |> 
-  bg(i = ~ is.na(country), bg = 'dodgerblue4') |> 
-  bg(i = ~ (country %in% c('Average', 'Maximum')), bg = 'grey95') |> 
-  style(pr_t = fp_text(font.family = 'Source Sans Pro'), part = 'all') |> 
-  bold(part = 'header', i = 3) |> 
-  style( ### group rows
-    i = ~ (is.na(country)),
-    pr_t = fp_text(
-      color = 'white',
-      bold = TRUE,
-      font.size = 12,
-    )
-  ) |> 
-  style( ### title
-    part = 'header',
-    i = 1,
-    pr_t = fp_text(
-      color = 'dodgerblue4',
-      font.size = 18,
-      font.family = 'Source Sans Pro',
-      bold = TRUE
-    ),
-    pr_c = fp_cell(
-      border.top = fp_border(width = 1.5, color = 'grey40'),
-      border.bottom = fp_border(width = 0, color = 'grey40')
-    )
-  ) |> 
-  style( #### subtitle
-    part = 'header',
-    i = 2,
-    pr_t = fp_text(font.size = 11),
-    ### This part is added 
-    pr_c = fp_cell(border = fp_border(width = 0, color = 'grey40'))
-  ) |> 
-  line_spacing(part= 'all', space = 0.75) |> 
-  ### This part is added 
-  hline(part = 'header', i = 2, border = fp_border(width = 0)) |> 
-  hline(part = 'header', i = 3, border = fp_border(width = 0)) |> 
-  border(i = 3, j = 2:7, border.bottom = fp_border(width = 1, color = 'grey40'), part = 'header') |> 
-  compose(i = ~ !(country %in% c('Average', 'Maximum') | is.na(country)), j = 'life_exps', value = as_paragraph(
-    plot_chunk(value = life_exps, type = 'line', col = 'dodgerblue4')
-  )) |> 
-  compose(i = ~ (country %in% c('Average', 'Maximum') | is.na(country)), j = 'life_exps', value = as_paragraph('')) |> 
-  autofit()
-
 ```
 
 ### Code and Video solutions
@@ -1160,8 +745,6 @@ penguin_mass |>
 
 ```
 
-### Your Turn Exercise
-
 ### Code and Video solutions
 
 ### Learn more
@@ -1174,16 +757,203 @@ Images and some more mini charts at https://ardata-fr.github.io/flextable-book/c
 
 Take a NYT table or something from FiveThirtyEight
 
-### Your Turn Exercise
+```{r}
+library(officer)
+library(flextable)
 
-Will there be a Your Turn? Or is it just follow along?
+library(tidyverse)
+library(lubridate)
+
+big_tech_stock_prices <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2023/2023-02-07/big_tech_stock_prices.csv')
+big_tech_companies <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2023/2023-02-07/big_tech_companies.csv')
+
+stocks <- big_tech_stock_prices |> 
+  left_join(big_tech_companies) |> 
+  arrange(company, date)
+
+covid_period <- stocks |> 
+  filter(date %in% c(make_date(2020, 1, 2), make_date(2022, 12, 29)))
+
+covid_changes <- covid_period |> 
+  group_by(stock_symbol, company) |> 
+  nest() |> 
+  mutate(
+    change_abs = map_dbl(data, \(x) (x$open[2] - x$open[1])),
+    change_rel = map_dbl(data, \(x) (x$open[2]/x$open[1] - 1)),
+    percent = scales::percent(change_rel, accuracy = 0.01)
+  ) |> 
+  ungroup() |> 
+  arrange(change_rel) |> 
+  select(-data)
+
+
+open_prices <- covid_period |> 
+  select(stock_symbol, open, date) |> 
+  mutate(date = as.character(year(date))) |> 
+  pivot_wider(
+    id_cols = stock_symbol, 
+    names_from = date, 
+    names_prefix = 'open', 
+    values_from = 'open'
+  )
+
+
+chart_line_color <- 'grey20'
+chart_segment_color_pos <- 'seagreen'
+chart_segment_color_neg <-  'firebrick4'
+  
+tbl_data <- covid_changes |> 
+  left_join(open_prices) |> 
+  select(company, open2020, open2022, change_abs, percent, stock_symbol)  |> 
+  mutate(
+    company = if_else(stock_symbol == 'IBM', 'IBM', company),
+    company = str_remove(company, '(,)? Inc\\.'),
+    company = str_remove(company, ' (Corporation|Platforms|Systems)'),
+    company = str_remove(company, '\\.com')
+  )
+
+
+plot_stock_evolution <- function(stock_symbol) {
+  single_stock <- stocks |> 
+    filter(
+      date %within% interval(make_date(2020, 1, 2), make_date(2022, 12, 29)),
+      stock_symbol == !!stock_symbol
+    ) 
+  
+  single_covid_period <- covid_period |> 
+    filter(stock_symbol == !!stock_symbol)
+  
+  single_covid_change <- covid_changes |> 
+    filter(stock_symbol == !!stock_symbol) |> 
+    pull(change_abs)
+  
+  segment_color <- if (single_covid_change > 0) chart_segment_color_pos  else chart_segment_color_neg
+  
+  single_stock |> 
+    ggplot(aes(date, open)) +
+    geom_line(col = chart_line_color, linewidth = 1) +
+    geom_line(data = single_covid_period, color = segment_color, linewidth = 1.25) +
+    theme_void()
+}
+
+list_of_ggplots <- map(tbl_data$stock_symbol, plot_stock_evolution)
+
+```
+
+```{r}
+
+default_font <- 'Source Sans Pro'
+default_font_color <- 'grey20'
+default_font_size <- 12
+set_flextable_defaults(
+  font.family = default_font,
+  font.color = default_font_color,
+  font.size = default_font_size,
+  border.color = 'grey40',
+)
+
+tbl_data |> 
+  flextable() |> 
+  set_header_labels(
+    stock_symbol = 'Opening prices over time',
+    company = '',
+    logo = '',
+    open2020 = 'Jan 02, 2020',
+    open2022 = 'Dec 29, 2022',
+    change_abs = 'abs.',
+    percent = 'rel.'
+  ) |> 
+  add_header_row(
+    values = c('', 'Opening Prices', 'Change', ''),
+    colwidths = c(1, 2, 2, 1)
+  ) |> 
+  add_header_lines(
+    values = c('Not all tech companies are COVID winners',
+    'During the pandemic, tech companies were hyped as COVID winners. Their stock prices surged while most other companies struggled. But not every tech company was so lucky in the end.')
+  ) |> 
+  align(j = 'percent', align = 'right', part = 'header') |> 
+  align(j = 'percent', align = 'right', part = 'body') |> 
+  align(i = 3, part = 'header', align = 'center') |> 
+  flextable::compose(
+    j = 'stock_symbol',
+    value = as_paragraph(
+      gg_chunk(
+        value = list_of_ggplots,
+        width = 7,
+        height = 1,
+        unit = 'cm'
+      )
+    )
+  ) |> 
+  autofit() |> 
+  width(j = 'stock_symbol', width = 6, unit = 'cm') |> 
+  set_formatter(
+    open2020 = function(x) scales::dollar(x),
+    open2022 = function(x) scales::dollar(x),
+    change_abs = function(x) scales::dollar(x)
+  ) |> 
+  border(
+    i = 1:3,
+    part = 'header',
+    border.bottom = fp_border_default(width = 1),
+    border.top = fp_border_default(width = 1)
+  ) |> 
+  border(
+    i = 14,
+    border.bottom = fp_border_default(width = 1.5)
+  ) |> 
+  border(i = 1, border.bottom = fp_border_default(width = 0), part = 'header') |> 
+  border(i = 2, border.top = fp_border_default(width = 0), part = 'header') |> 
+  border(i = 3, j = c(1, 6), border.bottom = fp_border_default(width = 0), part = 'header') |> 
+  border(i = 4, j = c(1, 6), border.top = fp_border_default(width = 0), part = 'header') |> 
+  style(
+    i = 3, j = 2:5,
+    pr_t = fp_text_default(
+      bold = TRUE
+    ),
+    part = 'header'
+  ) |> 
+  style(
+    i = 4, j = 6, part = 'header',
+    pr_t = fp_text_default(bold = TRUE)
+  ) |> 
+  style(
+    i = ~ change_abs < 0, 
+    j = c('change_abs', 'percent'),
+    pr_t = fp_text_default(
+      bold = TRUE,
+      color = chart_segment_color_neg
+    )
+  ) |> 
+  style(
+    i = ~ change_abs >= 0, 
+    j = c('change_abs', 'percent'),
+    pr_t = fp_text_default(
+      bold = TRUE,
+      color = chart_segment_color_pos
+    )
+  ) |> 
+  style(
+    i = 1, part = 'header',
+    pr_t = fp_text_default(
+      font.size = 24,
+      font.family = 'Merriweather',
+      bold = TRUE
+    )
+  ) |> 
+  style(
+    i = 2, part = 'header',
+    pr_t = fp_text_default(
+      font.size = 16,
+      font.family = 'Source Sans Pro'
+    )
+  ) |> 
+  border(
+    i = 1:13,
+    border.bottom = fp_border_default(color = 'grey80', width = 0.5)
+  )
+```
 
 ### Code and Video solutions
 
 ### Learn more
-
-## Lessons 17-33: Same stuff but for {reactable}
-
-Same data set as before for consistency + one-to-one comparison? Or new data set for novelty?
-
-## Lessons 33-35: Maybe some interactive specifics

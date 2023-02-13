@@ -1,0 +1,469 @@
+
+## Lesson 1: Get data into right format
+
+```{r}
+gapminder_data <- gapminder::gapminder |> 
+  janitor::clean_names() |> 
+  select(continent, country, year, life_exp) |> 
+  mutate(
+    year = as.character(year),
+    # Year is really categorical with numeric labels
+    country = as.character(country) 
+  ) 
+gapminder_data
+
+set.seed(34534)
+selected_countries <- gapminder_data  |> 
+# Filter to use only six years (those that end in 7)
+  filter(str_ends(year, "7")) |>
+# sample two countries per continent
+  group_by(continent, country) |> 
+  nest() |> 
+  group_by(continent) |> 
+  slice_sample(n = 2) |> 
+  ungroup() |> 
+  unnest(data) |> 
+# Rearrange the data into table format
+  pivot_wider(names_from = year, names_prefix = 'year', values_from = life_exp)
+selected_countries
+```
+
+
+## Lesson 2: Avoid vertical lines with `flextable()`
+
+```{r}
+selected_countries |> 
+  flextable() |> 
+  autofit()
+```
+
+
+## Lesson 3: Use better column names and a title
+
+```{r}
+selected_countries |> 
+  flextable() |> 
+  set_header_labels(
+    continent = '',
+    country = '',
+    year1957 = '1957',
+    year1967 = '1967',
+    year1977 = '1977',
+    year1987 = '1987',
+    year1997 = '1997',
+    year2007 = '2007'
+  ) |> 
+  add_header_row(
+    values = c('', '50s-70s', '80s-20s'),
+    colwidths = c(2, 3, 3)
+  ) |> 
+  add_header_lines(
+    values = c('Life expectancties over time', 'Data is courtesy of the {gapminder} R package')
+  ) |> 
+  autofit()
+```
+
+```{r}
+new_names <- c('', '', seq(1957, 2007, 10))
+names(new_names) <- colnames(selected_countries)
+
+selected_countries |> 
+  flextable() |> 
+  set_header_labels(values = new_names) |> 
+  add_header_row(
+    values = c('', '50s-70s', '80s-20s'),
+    colwidths = c(2, 3, 3)
+  ) |> 
+  add_header_lines(
+    values = c('Life expectancties over time', 'Data is courtesy of the {gapminder} R package')
+  ) |> 
+  autofit()
+
+```
+
+
+
+## Lesson 4: Align columns
+
+
+Center the spanners
+
+```{r}
+selected_countries |> 
+  flextable() |> 
+  set_header_labels(values = new_names) |> 
+  add_header_row(
+    values = c('', '50s-70s', '80s-20s'),
+    colwidths = c(2, 3, 3)
+  ) |> 
+  add_header_lines(
+    values = c('Life expectancties over time', 'Data is courtesy of the {gapminder} R package')
+  ) |> 
+  align(i = 3, align = 'center', part = 'header') |> 
+  autofit()
+```
+
+
+## Lesson 5: Use groups instead of repetitive columns
+
+```{r}
+selected_countries |> 
+  as_grouped_data(
+    groups = 'continent'
+  ) |> 
+  as_flextable(hide_grouplabel = TRUE) |> 
+  set_header_labels(values = new_names) |> 
+  add_header_row(
+    values = c('', '50s-70s', '80s-20s'),
+    colwidths = c(1, 3, 3)
+  ) |> 
+  add_header_lines(
+    values = c('Life expectancties over time', 'Data is courtesy of the {gapminder} R package')
+  ) |> 
+  align(i = 3, align = 'center', part = 'header') |> 
+  autofit()
+```
+
+## Lesson 6: Format missing numbers
+
+Format digits with `colformat_double()`.
+
+```{r}
+selected_countries |> 
+  as_grouped_data(
+    groups = 'continent'
+  ) |> 
+  as_flextable(hide_grouplabel = TRUE) |> 
+  set_header_labels(values = new_names) |> 
+  add_header_row(
+    values = c('', '50s-70s', '80s-20s'),
+    colwidths = c(1, 3, 3)
+  ) |> 
+  add_header_lines(
+    values = c('Life expectancties over time', 'Data is courtesy of the {gapminder} R package')
+  ) |> 
+  align(i = 3, align = 'center', part = 'header') |> 
+  colformat_double(digits = 2) |> 
+  autofit()
+```
+
+## Lesson 7: Add summaries
+
+```{r}
+average_life_exps <- gapminder_data |> 
+  filter(country %in% selected_countries$country, str_ends(year, '7')) |> 
+  group_by(continent, year) |> 
+  summarise(Average = mean(life_exp), .groups = 'drop') |> 
+  pivot_wider(names_from = year, values_from = Average, names_prefix = 'year') |> 
+  mutate(country = 'Average', .before = 2)
+
+max_life_exps <- gapminder_data |> 
+  filter(country %in% selected_countries$country, str_ends(year, '7')) |> 
+  group_by(continent, year) |> 
+  summarise(Maximum = max(life_exp), .groups = 'drop') |> 
+  pivot_wider(names_from = year, values_from = Maximum, names_prefix = 'year') |> 
+  mutate(country = 'Maximum', .before = 2)
+
+selected_countries |> 
+  bind_rows(average_life_exps, max_life_exps) |> 
+  arrange(continent, country %in% c('Average', 'Maximum')) |> 
+  as_grouped_data(
+    groups = 'continent'
+  ) |> 
+  as_flextable(hide_grouplabel = TRUE) |> 
+  set_header_labels(values = new_names) |> 
+  add_header_row(
+    values = c('', '50s-70s', '80s-20s'),
+    colwidths = c(1, 3, 3)
+  ) |> 
+  add_header_lines(
+    values = c('Life expectancties over time', 'Data is courtesy of the {gapminder} R package')
+  ) |> 
+  align(i = 3, align = 'center', part = 'header') |> 
+  colformat_double(digits = 2) |> 
+  autofit()
+```
+
+
+## Lesson 8: Add additional horizontal lines
+
+```{r}
+selected_countries |> 
+  bind_rows(average_life_exps, max_life_exps) |> 
+  arrange(continent, country %in% c('Average', 'Maximum')) |> 
+  as_grouped_data(
+    groups = 'continent'
+  ) |> 
+  as_flextable(hide_grouplabel = TRUE) |> 
+  set_header_labels(values = new_names) |> 
+  add_header_row(
+    values = c('', '50s-70s', '80s-20s'),
+    colwidths = c(1, 3, 3)
+  ) |> 
+  add_header_lines(
+    values = c('Life expectancties over time', 'Data is courtesy of the {gapminder} R package')
+  ) |> 
+  align(i = 3, align = 'center', part = 'header') |> 
+  colformat_double(digits = 2) |> 
+  hline(i = ~ (!is.na(continent) | country == 'Maximum' | lead(country == 'Maximum', 2, default = FALSE))) |> 
+  autofit()
+```
+
+## Lesson 9: Add background colors
+
+```{r}
+selected_countries |> 
+  bind_rows(average_life_exps, max_life_exps) |> 
+  arrange(continent, country %in% c('Average', 'Maximum')) |> 
+  as_grouped_data(
+    groups = 'continent'
+  ) |> 
+  as_flextable(hide_grouplabel = TRUE) |> 
+  set_header_labels(values = new_names) |> 
+  add_header_row(
+    values = c('', '50s-70s', '80s-20s'),
+    colwidths = c(1, 3, 3)
+  ) |> 
+  add_header_lines(
+    values = c('Life expectancties over time', 'Data is courtesy of the {gapminder} R package')
+  ) |> 
+  align(i = 3, align = 'center', part = 'header') |> 
+  colformat_double(digits = 2) |> 
+  hline(i = ~ (!is.na(continent) | country == 'Maximum' | lead(country == 'Maximum', 2, default = FALSE))) |> 
+  bg(i = ~ is.na(country), bg = 'dodgerblue4') |> 
+  bg(i = ~ (country %in% c('Average', 'Maximum')), bg = 'grey95') |> 
+  autofit() 
+```
+
+## Lesson 10: Change text appearance
+
+```{r}
+selected_countries |> 
+  bind_rows(average_life_exps, max_life_exps) |> 
+  arrange(continent, country %in% c('Average', 'Maximum')) |> 
+  as_grouped_data(
+    groups = 'continent'
+  ) |> 
+  as_flextable(hide_grouplabel = TRUE) |> 
+  set_header_labels(values = new_names) |> 
+  add_header_row(
+    values = c('', '50s-70s', '80s-20s'),
+    colwidths = c(1, 3, 3)
+  ) |> 
+  add_header_lines(
+    values = c('Life expectancties over time', 'Data is courtesy of the {gapminder} R package')
+  ) |> 
+  align(i = 3, align = 'center', part = 'header') |> 
+  colformat_double(digits = 2) |> 
+  hline(i = ~ (!is.na(continent) | country == 'Maximum' | lead(country == 'Maximum', 2, default = FALSE))) |> 
+  bg(i = ~ is.na(country), bg = 'dodgerblue4') |> 
+  bg(i = ~ (country %in% c('Average', 'Maximum')), bg = 'grey95') |> 
+  style(pr_t = fp_text(font.family = 'Source Sans Pro'), part = 'all') |> 
+  bold(part = 'header', i = 3) |> 
+  style( ### group rows
+    i = ~ (is.na(country)),
+    pr_t = fp_text(
+      color = 'white',
+      bold = TRUE,
+      font.size = 12,
+    )
+  ) |> 
+  style( ### title
+    part = 'header',
+    i = 1,
+    pr_t = fp_text(
+      color = 'dodgerblue4',
+      font.size = 18,
+      font.family = 'Source Sans Pro',
+      bold = TRUE
+    )
+  ) |> 
+  autofit() 
+```
+
+
+## Lesson 11: Change cell properties
+
+```{r}
+final_table_exercises <- selected_countries |> 
+  bind_rows(average_life_exps, max_life_exps) |> 
+  arrange(continent, country %in% c('Average', 'Maximum')) |> 
+  as_grouped_data(
+    groups = 'continent'
+  ) |> 
+  as_flextable(hide_grouplabel = TRUE) |> 
+  set_header_labels(values = new_names) |> 
+  add_header_row(
+    values = c('', '50s-70s', '80s-20s'),
+    colwidths = c(1, 3, 3)
+  ) |> 
+  add_header_lines(
+    values = c('Life expectancties over time', 'Data is courtesy of the {gapminder} R package')
+  ) |> 
+  align(i = 3, align = 'center', part = 'header') |> 
+  colformat_double(digits = 2) |> 
+  hline(i = ~ (!is.na(continent) | country == 'Maximum' | lead(country == 'Maximum', 2, default = FALSE))) |> 
+  bg(i = ~ is.na(country), bg = 'dodgerblue4') |> 
+  bg(i = ~ (country %in% c('Average', 'Maximum')), bg = 'grey95') |> 
+  style(pr_t = fp_text(font.family = 'Source Sans Pro'), part = 'all') |> 
+  bold(part = 'header', i = 3) |> 
+  style( ### group rows
+    i = ~ (is.na(country)),
+    pr_t = fp_text(
+      color = 'white',
+      bold = TRUE,
+      font.size = 12,
+    )
+  ) |> 
+  style( ### title
+    part = 'header',
+    i = 1,
+    pr_t = fp_text(
+      color = 'dodgerblue4',
+      font.size = 18,
+      font.family = 'Source Sans Pro',
+      bold = TRUE
+    ),
+    pr_c = fp_cell(
+      border.top = fp_border(width = 1.5, color = 'grey40'),
+      border.bottom = fp_border(width = 0, color = 'grey40')
+    )
+  ) |> 
+  style( #### subtitle
+    part = 'header',
+    i = 2,
+    pr_t = fp_text(font.size = 11),
+    ### This part is added 
+    pr_c = fp_cell(border = fp_border(width = 0, color = 'grey40'))
+  ) |> 
+  line_spacing(part= 'all', space = 0.75) |> 
+  ### This part is added 
+  hline(part = 'header', i = 2, border = fp_border(width = 0)) |> 
+  hline(part = 'header', i = 3, border = fp_border(width = 0)) |> 
+  border(i = 3, j = 2:7, border.bottom = fp_border(width = 1, color = 'grey40'), part = 'header') |> 
+  autofit() 
+final_table_exercises
+```
+
+
+## Lesson 12: Export
+
+```{r}
+save_as_docx(
+  final_table_exercises,
+  path = 'final_table_exercises.docx'
+)
+
+# Make sure that you have {webshot2} and phantomJS installed. The latter can be installed via {webshot2}
+save_as_image(
+  final_table_exercises,
+  path = 'final_table_exercises.png',
+  webshot = 'webshot2'
+)
+
+# Beware that in the output pptx file there can be empty cells that have huge font. 
+# This will cause the line heights of the cells to be large. 
+# You have to manually tweak this.
+save_as_pptx(
+  final_table_exercises,
+  path = 'final_table_exercises.pptx'
+)
+```
+
+
+## Lesson 13: Heatmap columns
+
+```{r}
+bg_color_fct <- scales::col_numeric(palette = "viridis", domain = c(0, 30, 85), na.color = 'white')
+text_color_fct <- function(x) if_else(x < 50 & !is.na(x), 'white', 'black')
+
+## Source needs to take the grouped data into account. That's why it's shifted by one.
+final_table_exercises |> 
+  bg(i = ~!(country %in% c('Average', 'Maximum')), j = c(2, 7), bg = bg_color_fct, source = c(3, 8)) |> 
+  color(i = ~!(country %in% c('Average', 'Maximum')), j = c(2, 7), color = text_color_fct, source = c(3, 8)) 
+```
+
+
+## Lesson 14: Sparklines
+
+```{r}
+life_exp_over_time <- gapminder_data |> 
+  filter(country %in% selected_countries$country, str_ends(year, '7')) |> 
+  group_by(country) |> 
+  summarise(life_exps = list(life_exp))
+
+
+selected_countries |> 
+  bind_rows(average_life_exps, max_life_exps) |> 
+  full_join(life_exp_over_time) |> 
+  arrange(continent, country %in% c('Average', 'Maximum')) |> 
+  as_grouped_data(
+    groups = 'continent'
+  ) |> 
+  as_flextable(hide_grouplabel = TRUE) |> 
+  set_header_labels(values = new_names) |> 
+  set_header_labels(life_exps = '') |> 
+  add_header_row(
+    values = c('', '50s-70s', '80s-20s', ''),
+    colwidths = c(1, 3, 3, 1)
+  ) |> 
+  add_header_lines(
+    values = c('Life expectancties over time', 'Data is courtesy of the {gapminder} R package')
+  ) |> 
+  align(i = 3, align = 'center', part = 'header') |> 
+  colformat_double(digits = 2) |> 
+  hline(i = ~ (!is.na(continent) | country == 'Maximum' | lead(country == 'Maximum', 2, default = FALSE))) |> 
+  bg(i = ~ is.na(country), bg = 'dodgerblue4') |> 
+  bg(i = ~ (country %in% c('Average', 'Maximum')), bg = 'grey95') |> 
+  style(pr_t = fp_text(font.family = 'Source Sans Pro'), part = 'all') |> 
+  bold(part = 'header', i = 3) |> 
+  style( ### group rows
+    i = ~ (is.na(country)),
+    pr_t = fp_text(
+      color = 'white',
+      bold = TRUE,
+      font.size = 12,
+    )
+  ) |> 
+  style( ### title
+    part = 'header',
+    i = 1,
+    pr_t = fp_text(
+      color = 'dodgerblue4',
+      font.size = 18,
+      font.family = 'Source Sans Pro',
+      bold = TRUE
+    ),
+    pr_c = fp_cell(
+      border.top = fp_border(width = 1.5, color = 'grey40'),
+      border.bottom = fp_border(width = 0, color = 'grey40')
+    )
+  ) |> 
+  style( #### subtitle
+    part = 'header',
+    i = 2,
+    pr_t = fp_text(font.size = 11),
+    ### This part is added 
+    pr_c = fp_cell(border = fp_border(width = 0, color = 'grey40'))
+  ) |> 
+  line_spacing(part= 'all', space = 0.75) |> 
+  ### This part is added 
+  hline(part = 'header', i = 2, border = fp_border(width = 0)) |> 
+  hline(part = 'header', i = 3, border = fp_border(width = 0)) |> 
+  border(i = 3, j = 2:7, border.bottom = fp_border(width = 1, color = 'grey40'), part = 'header') |> 
+  compose(i = ~ !(country %in% c('Average', 'Maximum') | is.na(country)), j = 'life_exps', value = as_paragraph(
+    plot_chunk(value = life_exps, type = 'line', col = 'dodgerblue4')
+  )) |> 
+  compose(i = ~ (country %in% c('Average', 'Maximum') | is.na(country)), j = 'life_exps', value = as_paragraph('')) |> 
+  autofit()
+
+```
+
+
+## Lesson 15: Add your own ggplot
+
+
+
+TODO
+
+
