@@ -755,8 +755,6 @@ Images and some more mini charts at https://ardata-fr.github.io/flextable-book/c
 
 ### Video Overview
 
-Take a NYT table or something from FiveThirtyEight
-
 ```{r}
 library(officer)
 library(flextable)

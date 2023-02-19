@@ -11,13 +11,14 @@ format:
 execute: 
   message: false
   warning: false
+  cache: false
 title-slide-attributes:
   data-background-image: "https://raw.githubusercontent.com/rfortherestofus/rfortherestofus/main/inst/assets/rru-hex-bg-gradient-dark.svg"
   data-background-size: cover
 ---
 
-
 ## About me
+
 ```{r}
 # Overwrite flextable output to export table as image and
 # include it as image
@@ -37,7 +38,6 @@ registerS3method(
 )
 
 ```
-
 
 ::: notes
 I'll introduce myself here.
@@ -59,7 +59,7 @@ penguins
 
 ### My bad table
 
-Bad table that I would have created in the past.
+![](https://gt.albert-rapp.de/img/stupid_table_screenshot.png)
 :::
 
 ## Avoid vertical lines with `flextable()`
@@ -350,17 +350,327 @@ final_table
 -   Adjust cell properties (some borders)
 :::
 
-# Sample Inverse {.inverse}
+## Export your table
 
-## Sample My Turn {.my-turn}
+::: tabset-panel
+### Word
 
-Exercitation consectetur sit excepteur cillum ad irure labore pariatur incididunt.
-Esse enim mollit velit nulla eiusmod consectetur occaecat laborum excepteur eu laborum enim pariatur do.
-Eiusmod exercitation minim incididunt nisi Lorem.
-Consectetur irure laboris est id aliquip Lorem.
-Minim et minim tempor ut aute minim.
-Velit non officia nisi proident enim sint.
-Nisi irure eu reprehenderit duis laboris amet velit velit consectetur magna quis.
-Veniam quis incididunt do non ipsum.
-Ut deserunt dolore sint aliquip ex deserunt eiusmod cillum ut.
-Qui sit officia in voluptate officia qui enim eiusmod id dolor incididunt est.
+```{r}
+#| eval: false
+#| echo: true
+save_as_docx(
+  final_table,
+  path = 'final_table.docx'
+)
+```
+
+### Image
+
+```{r}
+#| eval: false
+#| echo: true
+save_as_image(
+  final_table,
+  path = 'final_table.png',
+  webshot = 'webshot2'
+)
+```
+
+### Powerpoint
+
+```{r}
+#| eval: false
+#| echo: true
+save_as_pptx(
+  final_table,
+  path = 'table.pptx'
+)
+```
+:::
+
+# More visual elements {.inverse}
+
+## Where we're headed
+
+```{r}
+library(officer)
+library(flextable)
+
+library(tidyverse)
+library(lubridate)
+
+big_tech_stock_prices <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2023/2023-02-07/big_tech_stock_prices.csv')
+big_tech_companies <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2023/2023-02-07/big_tech_companies.csv')
+
+stocks <- big_tech_stock_prices |> 
+  left_join(big_tech_companies) |> 
+  arrange(company, date)
+
+covid_period <- stocks |> 
+  filter(date %in% c(make_date(2020, 1, 2), make_date(2022, 12, 29)))
+
+covid_changes <- covid_period |> 
+  group_by(stock_symbol, company) |> 
+  nest() |> 
+  mutate(
+    change_abs = map_dbl(data, \(x) (x$open[2] - x$open[1])),
+    change_rel = map_dbl(data, \(x) (x$open[2]/x$open[1] - 1)),
+    percent = scales::percent(change_rel, accuracy = 0.01)
+  ) |> 
+  ungroup() |> 
+  arrange(change_rel) |> 
+  select(-data)
+
+
+open_prices <- covid_period |> 
+  select(stock_symbol, open, date) |> 
+  mutate(date = as.character(year(date))) |> 
+  pivot_wider(
+    id_cols = stock_symbol, 
+    names_from = date, 
+    names_prefix = 'open', 
+    values_from = 'open'
+  )
+
+
+chart_line_color <- 'grey20'
+chart_segment_color_pos <- 'seagreen'
+chart_segment_color_neg <-  'firebrick4'
+  
+tbl_data <- covid_changes |> 
+  left_join(open_prices) |> 
+  select(company, open2020, open2022, change_abs, percent, stock_symbol)  |> 
+  mutate(
+    company = if_else(stock_symbol == 'IBM', 'IBM', company),
+    company = str_remove(company, '(,)? Inc\\.'),
+    company = str_remove(company, ' (Corporation|Platforms|Systems)'),
+    company = str_remove(company, '\\.com')
+  )
+
+
+plot_stock_evolution <- function(stock_symbol) {
+  single_stock <- stocks |> 
+    filter(
+      date %within% interval(make_date(2020, 1, 2), make_date(2022, 12, 29)),
+      stock_symbol == !!stock_symbol
+    ) 
+  
+  single_covid_period <- covid_period |> 
+    filter(stock_symbol == !!stock_symbol)
+  
+  single_covid_change <- covid_changes |> 
+    filter(stock_symbol == !!stock_symbol) |> 
+    pull(change_abs)
+  
+  segment_color <- if (single_covid_change > 0) chart_segment_color_pos  else chart_segment_color_neg
+  
+  single_stock |> 
+    ggplot(aes(date, open)) +
+    geom_line(col = chart_line_color, linewidth = 1) +
+    geom_line(data = single_covid_period, color = segment_color, linewidth = 1.25) +
+    theme_void()
+}
+
+list_of_ggplots <- map(tbl_data$stock_symbol, plot_stock_evolution)
+
+```
+
+```{r}
+#| tbl.cap: case_study_table
+default_font <- 'Source Sans Pro'
+default_font_color <- 'grey20'
+default_font_size <- 12
+set_flextable_defaults(
+  font.family = default_font,
+  font.color = default_font_color,
+  font.size = default_font_size,
+  border.color = 'grey40',
+)
+
+tbl_data |> 
+  flextable() |> 
+  set_header_labels(
+    stock_symbol = 'Opening prices over time',
+    company = '',
+    logo = '',
+    open2020 = 'Jan 02, 2020',
+    open2022 = 'Dec 29, 2022',
+    change_abs = 'abs.',
+    percent = 'rel.'
+  ) |> 
+  add_header_row(
+    values = c('', 'Opening Prices', 'Change', ''),
+    colwidths = c(1, 2, 2, 1)
+  ) |> 
+  add_header_lines(
+    values = c('Not all tech companies are COVID winners',
+    'During the pandemic, tech companies were hyped as COVID winners. Their stock prices surged while most other companies struggled. But not every tech company was so lucky in the end.')
+  ) |> 
+  align(j = 'percent', align = 'right', part = 'header') |> 
+  align(j = 'percent', align = 'right', part = 'body') |> 
+  align(i = 3, part = 'header', align = 'center') |> 
+  flextable::compose(
+    j = 'stock_symbol',
+    value = as_paragraph(
+      gg_chunk(
+        value = list_of_ggplots,
+        width = 7,
+        height = 1,
+        unit = 'cm'
+      )
+    )
+  ) |> 
+  autofit() |> 
+  width(j = 'stock_symbol', width = 6, unit = 'cm') |> 
+  set_formatter(
+    open2020 = function(x) scales::dollar(x),
+    open2022 = function(x) scales::dollar(x),
+    change_abs = function(x) scales::dollar(x)
+  ) |> 
+  border(
+    i = 1:3,
+    part = 'header',
+    border.bottom = fp_border_default(width = 1),
+    border.top = fp_border_default(width = 1)
+  ) |> 
+  border(
+    i = 14,
+    border.bottom = fp_border_default(width = 1.5)
+  ) |> 
+  border(i = 1, border.bottom = fp_border_default(width = 0), part = 'header') |> 
+  border(i = 2, border.top = fp_border_default(width = 0), part = 'header') |> 
+  border(i = 3, j = c(1, 6), border.bottom = fp_border_default(width = 0), part = 'header') |> 
+  border(i = 4, j = c(1, 6), border.top = fp_border_default(width = 0), part = 'header') |> 
+  style(
+    i = 3, j = 2:5,
+    pr_t = fp_text_default(
+      bold = TRUE
+    ),
+    part = 'header'
+  ) |> 
+  style(
+    i = 4, j = 6, part = 'header',
+    pr_t = fp_text_default(bold = TRUE)
+  ) |> 
+  style(
+    i = ~ change_abs < 0, 
+    j = c('change_abs', 'percent'),
+    pr_t = fp_text_default(
+      bold = TRUE,
+      color = chart_segment_color_neg
+    )
+  ) |> 
+  style(
+    i = ~ change_abs >= 0, 
+    j = c('change_abs', 'percent'),
+    pr_t = fp_text_default(
+      bold = TRUE,
+      color = chart_segment_color_pos
+    )
+  ) |> 
+  style(
+    i = 1, part = 'header',
+    pr_t = fp_text_default(
+      font.size = 24,
+      font.family = 'Merriweather',
+      bold = TRUE
+    )
+  ) |> 
+  style(
+    i = 2, part = 'header',
+    pr_t = fp_text_default(
+      font.size = 16,
+      font.family = 'Source Sans Pro'
+    )
+  ) |> 
+  border(
+    i = 1:13,
+    border.bottom = fp_border_default(color = 'grey80', width = 0.5)
+  )
+```
+
+## Heatmap columns
+
+```{r}
+#| tbl.cap: heatmap_columns
+bg_color_fct <- scales::col_numeric(palette = "viridis", domain = c(0, 30), na.color = 'white')
+text_color_fct <- function(x) if_else(x < 20 & !is.na(x), 'white', 'black')
+
+## Source needs to take the grouped data into account. That's why it's shifted by one.
+final_table |> 
+  bg(i = ~(year %in% 2007:2009), j = 2:7, bg = bg_color_fct, source = 3:8) |> 
+  color(i = ~(year %in% 2007:2009), j = 2:7, color = text_color_fct,source = 3:8) 
+```
+
+## Sparklines
+
+```{r}
+#| tbl.cap: sparklines
+counts_over_time <- penguin_counts |> 
+  group_by(species, island, sex) |> 
+  summarise(collected_data = list(n)) |> 
+  ungroup()
+
+
+counts_over_time |> 
+  flextable() |> 
+  compose(j = 'collected_data', value = as_paragraph(
+    plot_chunk(value = collected_data, type = 'line', col = 'dodgerblue4')
+  ))
+```
+
+## Density plots
+
+```{r}
+#| tbl.cap: density_plot
+penguin_mass <- penguins |> 
+  group_by(species) |> 
+  summarise(body_masses = list(body_mass_g)) |> 
+  ungroup()
+
+penguin_mass |> 
+  flextable() |> 
+  compose(
+    j = 'body_masses',
+    value = as_paragraph(
+      plot_chunk(
+        value = body_masses,
+        type = 'dens',
+        col = 'dodgerblue4',
+        width = 3,
+        height = 1
+      )
+    )
+  )
+```
+
+## Add your own ggplot
+
+```{r}
+#| tbl.cap: add_ggplot
+single_species_weights <- penguin_mass$body_masses[[1]]
+
+gg_density_plot <- function(weights) {
+  ggplot() +
+    stat_density(aes(x = weights), fill = 'dodgerblue4', col = 'grey20') +
+    coord_cartesian(xlim = range(penguins$body_mass_g)) +
+    theme_void()
+}
+
+
+list_of_ggplots <- map(penguin_mass$body_masses, gg_density_plot)
+
+
+penguin_mass |> 
+  flextable() |> 
+  compose(
+    j = 'body_masses',
+    value = as_paragraph(
+      gg_chunk(
+        value = list_of_ggplots,
+        width = 3,
+        height = 1
+      )
+    )
+  )
+```
