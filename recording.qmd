@@ -1,14 +1,1025 @@
 
 
-
 ```{r}
 library(tidyverse)
 library(flextable)
 
 penguins <- palmerpenguins::penguins |> 
   filter(!is.na(sex))
-penguins
 
+penguin_counts <- penguins |> 
+  mutate(year = as.character(year)) |> 
+  group_by(species, island, sex, year) |> 
+  summarise(n = n(), .groups = 'drop')
+
+penguin_counts_wider <- penguin_counts |> 
+  pivot_wider(
+    names_from = c(species, sex),
+    values_from = n
+  ) |> 
+  arrange(island, year)
+
+penguin_counts_wider |> 
+  pivot_longer(
+    cols = -(1:2),
+    names_to = c('species', 'sex'),
+    names_sep = '_'
+  )
+
+flextable(penguin_counts_wider) |>
+  autofit()
+```
+
+
+```{r}
+flextable(penguin_counts_wider) |>
+  set_header_labels(
+    island = 'Island',
+    year = 'Year',
+    Adelie_female = 'Female',
+    Adelie_male = 'Male',
+    Chinstrap_female = 'Female',
+    Chinstrap_male = 'Male',
+    Gentoo_female = 'Female',
+    Gentoo_male = 'Male'
+  ) |> 
+  add_header_row(
+    values = c('', 'Adelie', 'Chinstrap', 'Gentoo'),
+    colwidths = c(2, 2, 2, 2)
+  ) |> 
+  add_header_lines(
+    values = c(
+      'Penguins in the Palmer Archipelago', '
+      Data is courtesy of the {palmerpenguins} R package'
+    )
+  ) |> 
+  autofit()
+```
+
+
+```{r}
+
+new_names <- c(
+  'Island', 'Year', rep(c('Female', 'Male'), 3)
+)
+names(new_names) <- colnames(penguin_counts_wider)
+
+flextable(penguin_counts_wider) |>
+  set_header_labels(values = new_names) |> 
+  add_header_row(
+    values = c('', 'Adelie', 'Chinstrap', 'Gentoo'),
+    colwidths = c(2, 2, 2, 2)
+  ) |> 
+  add_header_lines(
+    values = c(
+      'Penguins in the Palmer Archipelago', '
+      Data is courtesy of the {palmerpenguins} R package'
+    )
+  ) |> 
+  autofit()
 
 ```
+
+
+```{r}
+flextable(penguin_counts_wider) |>
+  set_header_labels(values = new_names) |> 
+  add_header_row(
+    values = c('', 'Adelie', 'Chinstrap', 'Gentoo'),
+    colwidths = c(2, 2, 2, 2)
+  ) |> 
+  add_header_lines(
+    values = c(
+      'Penguins in the Palmer Archipelago', '
+      Data is courtesy of the {palmerpenguins} R package'
+    )
+  ) |> 
+  align(i = 3, part = 'header', align = 'center') |> 
+  align(j = 'year', part = 'body', align = 'right') |> 
+  autofit()
+```
+
+
+```{r}
+penguin_counts_wider |> 
+  mutate(island = paste0('Island: ', island)) |> 
+  as_grouped_data('island') |> 
+  as_flextable(hide_grouplabel = TRUE) |>
+  set_header_labels(values = new_names) |> 
+  add_header_row(
+    values = c('', 'Adelie', 'Chinstrap', 'Gentoo'),
+    colwidths = c(1, 2, 2, 2)
+  ) |> 
+  add_header_lines(
+    values = c(
+      'Penguins in the Palmer Archipelago', '
+      Data is courtesy of the {palmerpenguins} R package'
+    )
+  ) |> 
+  align(i = 3, part = 'header', align = 'center') |> 
+  autofit()
+```
+
+
+```{r}
+penguin_counts_wider |> 
+  mutate(island = paste0('Island: ', island)) |> 
+  as_grouped_data('island') |> 
+  as_flextable(hide_grouplabel = TRUE) |>
+  set_header_labels(values = new_names) |> 
+  add_header_row(
+    values = c('', 'Adelie', 'Chinstrap', 'Gentoo'),
+    colwidths = c(1, 2, 2, 2)
+  ) |> 
+  add_header_lines(
+    values = c(
+      'Penguins in the Palmer Archipelago', '
+      Data is courtesy of the {palmerpenguins} R package'
+    )
+  ) |> 
+  align(i = 3, part = 'header', align = 'center') |>
+  colformat_num(na_str = '-') |> 
+  autofit()
+```
+
+
+
+```{r}
+
+maximum_summary <- penguin_counts_wider |> 
+  group_by(island) |> 
+  summarise(
+    across(
+      .cols = -year,
+      .fns = max
+    )
+  ) |> 
+  mutate(year = 'Maximum')
+
+total_summary <- penguin_counts_wider |> 
+  group_by(island) |> 
+  summarise(
+    across(
+      .cols = -year,
+      .fns = sum
+    )
+  )  |> 
+  mutate(year = 'Total')
+
+
+
+bind_rows(
+  penguin_counts_wider, 
+  maximum_summary, 
+  total_summary
+) |> 
+  arrange(island, year) |> 
+  mutate(island = paste0('Island: ', island)) |> 
+  as_grouped_data('island') |> 
+  as_flextable(hide_grouplabel = TRUE) |>
+  set_header_labels(values = new_names) |> 
+  add_header_row(
+    values = c('', 'Adelie', 'Chinstrap', 'Gentoo'),
+    colwidths = c(1, 2, 2, 2)
+  ) |> 
+  add_header_lines(
+    values = c(
+      'Penguins in the Palmer Archipelago', '
+      Data is courtesy of the {palmerpenguins} R package'
+    )
+  ) |> 
+  align(i = 3, part = 'header', align = 'center') |>
+  align(
+    i = ~ (year %in% 2007:2009) ,
+    j = 'year',
+    align = 'right'
+  ) |> 
+  colformat_num(na_str = '-') |> 
+  autofit()
+```
+
+
+```{r}
+bind_rows(
+  penguin_counts_wider, 
+  maximum_summary, 
+  total_summary
+) |> 
+  arrange(island, year) |> 
+  mutate(island = paste0('Island: ', island)) |> 
+  as_grouped_data('island') |> 
+  as_flextable(hide_grouplabel = TRUE) |>
+  set_header_labels(values = new_names) |> 
+  add_header_row(
+    values = c('', 'Adelie', 'Chinstrap', 'Gentoo'),
+    colwidths = c(1, 2, 2, 2)
+  ) |> 
+  add_header_lines(
+    values = c(
+      'Penguins in the Palmer Archipelago', '
+      Data is courtesy of the {palmerpenguins} R package'
+    )
+  ) |> 
+  align(i = 3, part = 'header', align = 'center') |>
+  align(
+    i = ~ (year %in% 2007:2009) ,
+    j = 'year',
+    align = 'right'
+  ) |> 
+  colformat_num(na_str = '-') |> 
+  hline(
+    i = ~ (year %in% c('2009', 'Total') | !is.na(island))
+  ) |> 
+  autofit()
+```
+
+
+```{r}
+bind_rows(
+  penguin_counts_wider, 
+  maximum_summary, 
+  total_summary
+) |> 
+  arrange(island, year) |> 
+  mutate(island = paste0('Island: ', island)) |> 
+  as_grouped_data('island') |> 
+  as_flextable(hide_grouplabel = TRUE) |>
+  set_header_labels(values = new_names) |> 
+  add_header_row(
+    values = c('', 'Adelie', 'Chinstrap', 'Gentoo'),
+    colwidths = c(1, 2, 2, 2)
+  ) |> 
+  add_header_lines(
+    values = c(
+      'Penguins in the Palmer Archipelago', '
+      Data is courtesy of the {palmerpenguins} R package'
+    )
+  ) |> 
+  align(i = 3, part = 'header', align = 'center') |>
+  align(
+    i = ~ (year %in% 2007:2009) ,
+    j = 'year',
+    align = 'right'
+  ) |> 
+  colformat_num(na_str = '-') |> 
+  hline(
+    i = ~ (year %in% c('2009', 'Total') | !is.na(island))
+  ) |> 
+  bg(
+    part = 'header',
+    i = 3:4,
+    bg = 'dodgerblue4'
+  ) |> 
+  bg(
+    i = ~ (year %in% seq(2007, 2009, 2)),
+    bg = 'grey90'
+  ) |> 
+  autofit()
+```
+
+
+
+```{r}
+library(officer)
+
+new_names <- c(
+  'Island', '', rep(c('Female', 'Male'), 3)
+)
+names(new_names) <- colnames(penguin_counts_wider)
+set_flextable_defaults(
+  font.size = 12,
+  line_spacing = 0.9
+)
+
+bind_rows(
+  penguin_counts_wider, 
+  maximum_summary, 
+  total_summary
+) |> 
+  arrange(island, year) |> 
+  mutate(island = paste0('Island: ', island)) |> 
+  as_grouped_data('island') |> 
+  as_flextable(hide_grouplabel = TRUE) |>
+  set_header_labels(values = new_names) |> 
+  add_header_row(
+    values = c('', 'Adelie', 'Chinstrap', 'Gentoo'),
+    colwidths = c(1, 2, 2, 2)
+  ) |> 
+  add_header_lines(
+    values = c(
+      'Penguins in the Palmer Archipelago', 
+      'Data is courtesy of the {palmerpenguins} R package'
+    )
+  ) |> 
+  align(i = 3, part = 'header', align = 'center') |>
+  align(
+    i = ~ (year %in% 2007:2009) ,
+    j = 'year',
+    align = 'right'
+  ) |> 
+  colformat_num(na_str = '-') |> 
+  hline(
+    i = ~ (year %in% c('2009', 'Total') | !is.na(island))
+  ) |> 
+  bg(
+    i = ~ (year %in% seq(2007, 2009, 2)),
+    bg = 'grey90'
+  ) |> 
+  style( ### Column labels
+    part = 'header',
+    i = 3:4,
+    pr_t = fp_text_default(
+      color = 'white',
+    ),
+    pr_c = fp_cell(background.color = 'dodgerblue4')
+  ) |> 
+  bold(part = 'header', i = 3) |> 
+  style( ### Title
+    part = 'header',
+    i = 1,
+    pr_t = fp_text_default(
+      color = 'dodgerblue4',
+      font.size = 18,
+      bold = TRUE,
+      font.family = 'Merriweather'
+    ),
+    pr_c = fp_cell()
+  ) |> 
+  style( ### Subtitle
+    part = 'header',
+    i = 2,
+    pr_t = fp_text_default(font.size = 10),
+    pr_c = fp_cell()
+  ) |> 
+  style( ### Island labels
+    i = ~!is.na(island),
+    pr_t = fp_text_default(
+      bold = TRUE,
+      color = 'dodgerblue4'
+    ),
+    pr_c = fp_cell(
+      border.bottom = fp_border(width = 1.25, color = 'grey40'),
+      border.top = fp_border(width = 1.25, color = 'grey40')
+    )
+  ) |>
+  vline(
+    part = 'body',
+    j = 'year',
+    i = ~is.na(island),
+  ) |> 
+  hline_bottom(
+    border = fp_border(width = 1.5, color = 'grey40')
+  ) |> 
+  hline_top(
+    part = 'header',
+    border = fp_border(width = 1.5, color = 'grey40')
+  ) |> 
+  autofit()
+```
+
+
+
+
+
+```{r}
+library(officer)
+
+new_names <- c(
+  'Island', ' ', rep(c('Female', 'Male'), 3)
+)
+names(new_names) <- colnames(penguin_counts_wider)
+set_flextable_defaults(
+  font.size = 12,
+  line_spacing = 0.9
+)
+
+bind_rows(
+  penguin_counts_wider, 
+  maximum_summary, 
+  total_summary
+) |> 
+  arrange(island, year) |> 
+  mutate(island = paste0('Island: ', island)) |> 
+  as_grouped_data('island') |> 
+  as_flextable(hide_grouplabel = TRUE) |>
+  set_header_labels(values = new_names) |> 
+  add_header_row(
+    values = c('', 'Adelie', 'Chinstrap', 'Gentoo'),
+    colwidths = c(1, 2, 2, 2)
+  ) |> 
+  add_header_lines(
+    values = c(
+      'Penguins in the Palmer Archipelago', 
+      'Data is courtesy of the {palmerpenguins} R package'
+    )
+  ) |> 
+  align(i = 3, part = 'header', align = 'center') |>
+  align(
+    i = ~ (year %in% 2007:2009) ,
+    j = 'year',
+    align = 'right'
+  ) |> 
+  colformat_num(na_str = '-') |> 
+  hline(
+    i = ~ (year %in% c('2009', 'Total') | !is.na(island))
+  ) |> 
+  bg(
+    i = ~ (year %in% seq(2007, 2009, 2)),
+    bg = 'grey90'
+  ) |> 
+  style( ### Column labels
+    part = 'header',
+    i = 3:4,
+    pr_t = fp_text_default(
+      color = 'white',
+    ),
+    pr_c = fp_cell(background.color = 'dodgerblue4')
+  ) |> 
+  bold(part = 'header', i = 3) |> 
+  style( ### Title
+    part = 'header',
+    i = 1,
+    pr_t = fp_text_default(
+      color = 'dodgerblue4',
+      font.size = 18,
+      bold = TRUE,
+      font.family = 'Merriweather'
+    ),
+    pr_c = fp_cell()
+  ) |> 
+  style( ### Subtitle
+    part = 'header',
+    i = 2,
+    pr_t = fp_text_default(font.size = 10),
+    pr_c = fp_cell()
+  ) |> 
+  style( ### Island labels
+    i = ~!is.na(island),
+    pr_t = fp_text_default(
+      bold = TRUE,
+      color = 'dodgerblue4'
+    ),
+    pr_c = fp_cell(
+      border.bottom = fp_border(width = 1.25, color = 'grey40'),
+      border.top = fp_border(width = 1.25, color = 'grey40')
+    )
+  ) |>
+  vline(
+    part = 'body',
+    j = 'year',
+    i = ~is.na(island),
+  ) |> 
+  hline_bottom(
+    border = fp_border(width = 1.5, color = 'grey40')
+  ) |> 
+  hline_top(
+    part = 'header',
+    border = fp_border(width = 1.5, color = 'grey40')
+  ) |> 
+  autofit()
+```
+
+
+
+```{r}
+
+set_flextable_defaults(
+  font.size = 12,
+  line_spacing = 0.9,
+  background.color = 'white'
+)
+
+final_table <- bind_rows(
+  penguin_counts_wider, 
+  maximum_summary, 
+  total_summary
+) |> 
+  arrange(island, year) |> 
+  mutate(island = paste0('Island: ', island)) |> 
+  as_grouped_data('island') |> 
+  as_flextable(hide_grouplabel = TRUE) |>
+  set_header_labels(values = new_names) |> 
+  add_header_row(
+    values = c('', 'Adelie', 'Chinstrap', 'Gentoo'),
+    colwidths = c(1, 2, 2, 2)
+  ) |> 
+  add_header_lines(
+    values = c(
+      'Penguins in the Palmer Archipelago', 
+      'Data is courtesy of the {palmerpenguins} R package'
+    )
+  ) |> 
+  align(i = 3, part = 'header', align = 'center') |>
+  align(
+    i = ~ (year %in% 2007:2009) ,
+    j = 'year',
+    align = 'right'
+  ) |> 
+  colformat_num(na_str = '-') |> 
+  hline(
+    i = ~ (year %in% c('2009', 'Total') | !is.na(island))
+  ) |> 
+  bg(
+    i = ~ (year %in% seq(2007, 2009, 2)),
+    bg = 'grey90'
+  ) |> 
+  style( ### Column labels
+    part = 'header',
+    i = 3:4,
+    pr_t = fp_text_default(
+      color = 'white',
+    ),
+    pr_c = fp_cell(background.color = 'dodgerblue4')
+  ) |> 
+  bold(part = 'header', i = 3) |> 
+  style( ### Title
+    part = 'header',
+    i = 1,
+    pr_t = fp_text_default(
+      color = 'dodgerblue4',
+      font.size = 18,
+      bold = TRUE,
+      font.family = 'Merriweather'
+    ),
+    pr_c = fp_cell(background.color = 'white')
+  ) |> 
+  style( ### Subtitle
+    part = 'header',
+    i = 2,
+    pr_t = fp_text_default(font.size = 10),
+    pr_c = fp_cell(background.color = 'white')
+  ) |> 
+  style( ### Island labels
+    i = ~!is.na(island),
+    pr_t = fp_text_default(
+      bold = TRUE,
+      color = 'dodgerblue4'
+    ),
+    pr_c = fp_cell(
+      border.bottom = fp_border(width = 1.25, color = 'grey40'),
+      border.top = fp_border(width = 1.25, color = 'grey40'),
+      background.color = 'white'
+    )
+  ) |>
+  vline(
+    part = 'body',
+    j = 'year',
+    i = ~is.na(island),
+  ) |> 
+  hline_bottom(
+    border = fp_border(width = 1.5, color = 'grey40')
+  ) |> 
+  hline_top(
+    part = 'header',
+    border = fp_border(width = 1.5, color = 'grey40')
+  ) |> 
+  autofit()
+final_table
+```
+
+
+```{r}
+save_as_docx(
+  final_table,
+  path = 'demo_final.docx'
+)
+
+save_as_pptx(
+  final_table |> 
+    padding(padding.top = 0, padding.bottom = 0) |> 
+    height_all(height = 0.75, unit = 'cm'),
+  path = 'demo_final.pptx'
+)
+
+save_as_image(
+  final_table,
+  path = 'demo_final.png',
+  webshot = 'webshot2',
+  res = 600
+)
+```
+
+
+
+```{r}
+bg_color_fct <- scales::col_numeric(
+  palette = 'viridis',
+  domain = c(0, 30),
+  na.color = "white"
+)
+
+text_color_fct <- function(x) {
+  if_else(
+    x < 20 & !is.na(x),
+    'white',
+    'black'
+  )
+}
+
+final_table |> 
+  bg(
+    bg = bg_color_fct,
+    i = ~(year %in% 2007:2009),
+    j = 2:7,
+    source = 3:8
+  ) |> 
+  color(
+    color = text_color_fct,
+    i = ~(year %in% 2007:2009),
+    j = 2:7,
+    source = 3:8
+  )
+```
+
+
+```{r}
+counts_over_timer <- penguin_counts |> 
+  group_by(species, island, sex) |> 
+  summarise(
+    collected_data = list(n)
+  ) |> 
+  ungroup()
+
+counts_over_time |> 
+  flextable() |> 
+  compose(
+    j = 'collected_data',
+    value = as_paragraph(
+      plot_chunk(
+        value = collected_data,
+        type = 'line',
+        col = 'dodgerblue4'
+      )
+    )
+  )
+
+
+penguin_mass <- penguins |> 
+  group_by(species) |> 
+  summarise(
+    body_masses = list(body_mass_g)
+  ) |> 
+  ungroup()
+
+
+penguin_mass |> 
+  flextable() |> 
+  compose(
+    j = 'body_masses',
+    value = as_paragraph(
+      plot_chunk(
+        value = body_masses,
+        type = 'dens',
+        width = 3,
+        height = 1,
+        col = 'dodgerblue4'
+      )
+    )
+  )
+```
+
+
+
+```{r}
+
+gg_density_plot <- function(weights) {
+  ggplot(mapping = aes(x = weights)) +
+    stat_density(fill = 'dodgerblue4', col = 'grey20') +
+    geom_boxplot(
+      width = 0.0005,
+      position = position_nudge(
+        y = -0.0003
+      )
+    ) +
+    coord_cartesian(
+      xlim = range(penguins$body_mass_g)
+    ) +
+    theme_void()
+}
+
+penguin_mass |> 
+  mutate(
+    body_masses = map(body_masses, gg_density_plot)
+  ) |> 
+  flextable() |> 
+  compose(
+    j = 'body_masses',
+    value = as_paragraph(
+      gg_chunk(
+        value = body_masses,
+        width = 3,
+        height = 1
+      )
+    )
+  )
+```
+
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(flextable)
+library(officer)
+
+big_tech_stock_prices <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2023/2023-02-07/big_tech_stock_prices.csv')
+big_tech_companies <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2023/2023-02-07/big_tech_companies.csv')
+
+stocks <- big_tech_stock_prices |> 
+  left_join(big_tech_companies) |> 
+  arrange(company, date)
+
+
+covid_period <- stocks |> 
+  filter(
+    date %in% c(
+      make_date(2020, 1, 2),
+      make_date(2022, 12, 29)
+    )
+  )
+
+covid_changes <- covid_period |> 
+  group_by(stock_symbol, company) |> 
+  nest() |> 
+  mutate(
+    change_abs = map_dbl(
+      data,
+      \(x) (x$open[2] - x$open[1])
+    ),
+    change_rel = map_dbl(
+      data,
+      \(x) (x$open[2] / x$open[1] - 1)
+    ),
+    percent = scales::percent(
+      change_rel,
+      accuracy = 0.01
+    )
+  ) |> 
+  ungroup() |> 
+  arrange(change_rel) |> 
+  select(-data)
+
+open_prices <- covid_period |> 
+  select(stock_symbol:open) |> 
+  mutate(date = as.character(year(date))) |> 
+  pivot_wider(
+    id_cols = stock_symbol,
+    names_from = date,
+    names_prefix = 'open',
+    values_from = 'open'
+  )
+
+
+tbl_data <- covid_changes |> 
+  left_join(open_prices) |> 
+  select(
+    company,
+    open2020,
+    open2022,
+    change_abs,
+    percent,
+    stock_symbol
+  ) |> 
+  mutate(
+    company = if_else(
+     stock_symbol == 'IBM',
+     'IBM',
+     company
+    ),
+    company = str_remove(
+      company,
+      '(,)? Inc\\.'
+    ),
+    company = str_remove(
+      company,
+      ' (Corporation|Platforms|Systems)'
+    ),
+    company = str_remove(
+      company,
+      '\\.com'
+    )
+  )
+```
+
+
+```{r}
+chart_line_color <- 'grey20'
+chart_segment_color_pos <- 'seagreen'
+chart_segment_color_neg <- 'firebrick4'
+
+tmp <- 'INTC'
+
+plot_stock_evolution <- function(stock_sym) {
+  single_stock <- stocks |> 
+  filter(
+    date %within% interval(
+      make_date(2020, 1, 2),
+      make_date(2022, 12, 29)
+    ),
+    stock_symbol == stock_sym
+  )
+  
+  single_covid_period <- covid_period |> 
+    filter(stock_symbol == stock_sym)
+  
+  single_covid_change <- covid_changes |> 
+    filter(stock_symbol == stock_sym) |> 
+    pull(change_abs)
+  
+  if (single_covid_change >= 0) {
+    segment_color <- chart_segment_color_pos
+  } 
+  if (single_covid_change < 0) {
+    segment_color <- chart_segment_color_neg
+  } 
+  
+  single_stock |> 
+    ggplot(aes(date, open)) +
+    geom_line(color = chart_line_color, linewidth = 1) +
+    geom_line(
+      data = single_covid_period,
+      color = segment_color,
+      linewidth = 1.25
+    ) +
+    theme_void()
+}
+
+```
+
+
+```{r}
+
+default_font <- 'Source Sans Pro'
+default_font_color <- 'grey20'
+default_font_size <- 12
+default_border_color <- 'grey40'
+set_flextable_defaults(
+  font.family = default_font,
+  font.color = default_font_color,
+  font.size = default_font_size,
+  border.color = default_border_color
+)
+
+
+tbl_data |> 
+  mutate(
+    stock_symbol = map(
+      stock_symbol,
+      plot_stock_evolution
+    )
+  ) |> 
+  flextable() |> 
+  set_header_labels(
+    stock_symbol = 'Opening prices over time',
+    company = '',
+    logo = '',
+    open2020 = 'Jan 02, 2020',
+    open2022 = 'Dec 29, 2022',
+    change_abs = 'abs.',
+    percent = 'rel.'
+  ) |> 
+  add_header_row(
+    values = c('', 'Opening Prices', 'Change', ''),
+    colwidths = c(1, 2, 2, 1)
+  )  |> 
+  add_header_lines(
+    values = c('Not all tech companies are COVID winners',
+    'During the pandemic, tech companies were hyped as COVID winners. Their stock prices surged while most other companies struggled. But not every tech company was so lucky in the end.')
+  ) |> 
+  align(
+    j = 'percent', 
+    align = 'right', 
+    part = 'all'
+  ) |> 
+  align(
+    i = 3, 
+    part = 'header', 
+    align = 'center'
+  ) |> 
+  compose(
+    j = 'stock_symbol',
+    value = as_paragraph(
+      gg_chunk(
+        value = stock_symbol,
+        width = 7,
+        height = 1,
+        unit = 'cm'
+      )
+    )
+  ) |> 
+  autofit() |> 
+  width(
+    j =  'stock_symbol',
+    width = 6,
+    unit = 'cm'
+  ) |> 
+  set_formatter(
+    open2020 = scales::dollar_format(),
+    open2022 = scales::dollar_format(),
+    change_abs = scales::dollar_format()
+  ) |> 
+  border(
+    i = 1,
+    part = 'header',
+    border.bottom = fp_border_default(width = 0)
+  ) |> 
+  border(
+    i = 2,
+    part = 'header',
+    border.top = fp_border_default(width = 0),
+    border.bottom = fp_border_default(width = 1)
+  ) |> 
+  border(
+    i = 3,
+    part = 'header',
+    border.top = fp_border_default(width = 1),
+  ) |> 
+  border(
+    i = 3,
+    j = c(1, 6),
+    part = 'header',
+    border.bottom = fp_border_default(width = 0)
+  ) |> 
+  border(
+    i = 4,
+    j = c(1, 6),
+    part = 'header',
+    border.top = fp_border_default(width = 0)
+  ) |> 
+  border(
+    i = 1:13,
+    border.bottom = fp_border_default(
+      color = 'grey80',
+      width = 0.5
+    )
+  ) |> 
+  bold(i = 3, part = 'header') |> 
+  bold(i = 4, j = 6, part = 'header') |> 
+  style(
+    i = ~ change_abs < 0,
+    j = c('change_abs', 'percent'),
+    pr_t = fp_text_default(
+      bold = TRUE,
+      color = chart_segment_color_neg
+    )
+  ) |> 
+  style(
+    i = ~ change_abs >= 0,
+    j = c('change_abs', 'percent'),
+    pr_t = fp_text_default(
+      bold = TRUE,
+      color = chart_segment_color_pos
+    )
+  ) |> 
+  style(
+    i = 1,
+    part = 'header',
+    pr_t = fp_text_default(
+      font.size = 24,
+      font.family = 'Merriweather',
+      bold = TRUE
+    )
+  ) |> 
+  style(
+    i = 2,
+    part = 'header',
+    pr_t = fp_text_default(
+      font.size = 16
+    )
+  )
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

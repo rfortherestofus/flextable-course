@@ -199,9 +199,9 @@ penguin_counts_wider |>
     colwidths = c(1, 2, 2, 2)
   ) |> 
   add_header_lines(
-    values = 'Penguins in the Palmer Archipelago\nData is courtesy of the {palmerpenguins} R package'
+    values = c('Penguins in the Palmer Archipelago', 'Data is courtesy of the {palmerpenguins} R package')
   ) |> 
-  align(i = 2, align = 'center', part = 'header') |> 
+  align(i = 3, align = 'center', part = 'header') |> 
   colformat_num(i = ~ (is.na(island)), na_str = '-') |> 
   autofit()
 ```
