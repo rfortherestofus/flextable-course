@@ -1,9 +1,27 @@
-## Lesson 1: Get data into right format and print table
+---
+output: html_document
+knitr: 
+  opts_chunk: 
+    message: false
+editor_options: 
+  chunk_output_type: console
+---
+
+## Lesson 1: Get data into right format
 
 In this exercise, we want to rearrange the data in the data set `gapminder` from the `gapminder` package.
 This data set contains life expectancies for different countries all over the world from different points in time.
 We want to consider only a couple of years and a couple of countries from this data set.
-From the full `gapminder` data set extract the correct data and rearrange it so that you get a data set like this:
+Take the full `gapminder` data set, i.e. use
+
+```{r}
+#| collapse: true
+
+gapminder::gapminder |> 
+  janitor::clean_names() # optional but makes nicer column names
+```
+
+and extract the correct data and rearrange it so that you get a data set like this:
 
 ```{r}
 #| echo: false
@@ -11,6 +29,7 @@ From the full `gapminder` data set extract the correct data and rearrange it so 
 #| message: false
 library(tidyverse)
 library(flextable)
+
 gapminder_data <- gapminder::gapminder |> 
   janitor::clean_names() |> 
   select(continent, country, year, life_exp) |> 
@@ -19,7 +38,6 @@ gapminder_data <- gapminder::gapminder |>
     # Year is really categorical with numeric labels
     country = as.character(country) 
   ) 
-gapminder_data
 
 set.seed(34534)
 selected_countries <- gapminder_data  |> 
@@ -38,10 +56,8 @@ selected_countries <- gapminder_data  |>
 selected_countries
 ```
 
-
-Once you have rearranged your data, you can create your first table with flextable.
-
-**Hint:** You can use this vector as a helpful tool (so that you don't have to type out the countries)
+Once you've done that you can create your first basic table with `flextable()`.
+**Hint**: In this exercise, you can use this vector as a helpful tool (so that you don't have to type out the countries)
 
 ```{r}
 selected_countries_vector <- c(
@@ -50,11 +66,11 @@ selected_countries_vector <- c(
 )
 ```
 
-
-
 ### Solution
 
 ```{r}
+library(tidyverse)
+library(flextable)
 selected_countries_vector <- c(
   'Egypt', 'Sierra Leone', 'Nicaragua', 'Jamaica', 'Syria', 'Singapore',
   'Netherlands', 'United Kingdom', 'New Zealand', 'Australia'
@@ -67,11 +83,19 @@ selected_countries <- gapminder::gapminder |>
   arrange(continent, country)
 
 selected_countries |> 
-  flextable() |> 
-  autofit()
+  flextable()
 ```
 
-## Lesson 3: Use better column names and a title
+## Lesson 2: Use better column names and a title
+
+Take your previous table, and
+
+-   set column labels,
+-   add a new label to group 50s-70s and 80s-20s,
+-   add a line for a title and subtitle each and
+-   then apply `autofit()`
+
+You can set the column labels either by hand or using a named vector.
 
 ```{r}
 selected_countries |> 
@@ -114,7 +138,7 @@ selected_countries |>
 
 ```
 
-## Lesson 4: Align columns
+## Lesson 3: Align columns
 
 Center the spanners
 
@@ -133,7 +157,10 @@ selected_countries |>
   autofit()
 ```
 
-## Lesson 5: Use groups instead of repetitive columns
+## Lesson 4: Use groups instead of repetitive columns
+
+Group your table by continent.
+Using `hide_grouplabel = TRUE` in `as_flextable()` may be helpful.
 
 ```{r}
 selected_countries |> 
@@ -153,9 +180,9 @@ selected_countries |>
   autofit()
 ```
 
-## Lesson 6: Format missing numbers
+## Lesson 5: Format missing numbers
 
-Format digits with `colformat_double()`.
+Round the numbers to two decimals with `colformat_double()`.
 
 ```{r}
 selected_countries |> 
@@ -176,7 +203,9 @@ selected_countries |>
   autofit()
 ```
 
-## Lesson 7: Add summaries
+## Lesson 6: Add summaries
+
+For each continent, add the average and maximum life expectancy for each year to the table.
 
 ```{r}
 average_life_exps <- gapminder_data |> 
@@ -213,7 +242,10 @@ selected_countries |>
   autofit()
 ```
 
-## Lesson 8: Add additional horizontal lines
+## Lesson 7: Add additional horizontal lines
+
+Structure your table by adding additional horizontal lines.
+More specifically, add horizontal lines after each continent label and before and after the block of maximum and average values.
 
 ```{r}
 selected_countries |> 
@@ -233,11 +265,21 @@ selected_countries |>
   ) |> 
   align(i = 3, align = 'center', part = 'header') |> 
   colformat_double(digits = 2) |> 
-  hline(i = ~ (!is.na(continent) | country == 'Maximum' | lead(country == 'Maximum', 2, default = FALSE))) |> 
+  hline(
+    i = ~ (
+      !is.na(continent) | 
+        country == 'Maximum' | 
+        lead(country == 'Maximum', 2, default = FALSE)
+    )
+  ) |> 
   autofit()
 ```
 
-## Lesson 9: Add background colors
+## Lesson 8: Add background colors
+
+Add a nice color like e.g. `"dodgerblue4"` to the continent labels.
+And a grey-ish color like `"grey95"` to the average and maximum.
+To target the continent labels using the `~`, it can be helpful to have a look at the data set that `as_grouped_data()` produces before it goes into `as_flextable()`.
 
 ```{r}
 selected_countries |> 
@@ -257,15 +299,30 @@ selected_countries |>
   ) |> 
   align(i = 3, align = 'center', part = 'header') |> 
   colformat_double(digits = 2) |> 
-  hline(i = ~ (!is.na(continent) | country == 'Maximum' | lead(country == 'Maximum', 2, default = FALSE))) |> 
+  hline(
+    i = ~ (
+      !is.na(continent) | 
+        country == 'Maximum' | 
+        lead(country == 'Maximum', 2, default = FALSE)
+    )
+  ) |> 
   bg(i = ~ is.na(country), bg = 'dodgerblue4') |> 
   bg(i = ~ (country %in% c('Average', 'Maximum')), bg = 'grey95') |> 
   autofit() 
 ```
 
-## Lesson 10: Change text appearance
+## Lesson 9: Change text appearance
+
+Adjust selected text properties:
+
+-   Change the font family to "Source Sans Pro" everywhere (you can also use some other font that you like. If you don't have the font installed yet, you can find it [online](https://www.fontsquirrel.com/fonts/source-sans-pro). Just unzip the file and install the `.otf`-file)
+-   Make the title bigger (size 18), bold and change its color to `"dodgerblue4"`
+-   Set the subtitle to font size 11
+-   Make the group labels ("50s-70s") bold
+-   Make the continent labels white and bold
 
 ```{r}
+library(officer)
 selected_countries |> 
   bind_rows(average_life_exps, max_life_exps) |> 
   arrange(continent, country %in% c('Average', 'Maximum')) |> 
@@ -283,7 +340,13 @@ selected_countries |>
   ) |> 
   align(i = 3, align = 'center', part = 'header') |> 
   colformat_double(digits = 2) |> 
-  hline(i = ~ (!is.na(continent) | country == 'Maximum' | lead(country == 'Maximum', 2, default = FALSE))) |> 
+  hline(
+    i = ~ (
+      !is.na(continent) | 
+        country == 'Maximum' | 
+        lead(country == 'Maximum', 2, default = FALSE)
+    )
+  ) |> 
   bg(i = ~ is.na(country), bg = 'dodgerblue4') |> 
   bg(i = ~ (country %in% c('Average', 'Maximum')), bg = 'grey95') |> 
   style(pr_t = fp_text(font.family = 'Source Sans Pro'), part = 'all') |> 
@@ -305,11 +368,21 @@ selected_countries |>
       font.family = 'Source Sans Pro',
       bold = TRUE
     )
+  ) |>
+  style( #### subtitle
+    part = 'header',
+    i = 2,
+    pr_t = fp_text(font.size = 11)
   ) |> 
   autofit() 
 ```
 
-## Lesson 11: Change cell properties
+## Lesson 10: Change cell properties
+
+-   Remove the borders around the subtitle
+-   Remove the top border on the group labels ("50s-70s")
+-   Make the bottom border below the group labels ("50s-70s") into a thin line that does not include the country column
+-   Set the line spacing everywhere to `0.75`
 
 ```{r}
 final_table_exercises <- selected_countries |> 
@@ -351,6 +424,7 @@ final_table_exercises <- selected_countries |>
       font.family = 'Source Sans Pro',
       bold = TRUE
     ),
+    ### This part is added 
     pr_c = fp_cell(
       border.top = fp_border(width = 1.5, color = 'grey40'),
       border.bottom = fp_border(width = 0, color = 'grey40')
@@ -372,7 +446,13 @@ final_table_exercises <- selected_countries |>
 final_table_exercises
 ```
 
-## Lesson 12: Export
+## Lesson 11: Export
+
+Export your last table as a `.docx`-, `.png`- and `.pptx`-file.
+For the .png-file use the `webshot2` package (which you need to have installed).
+Beware that in the output `.pptx`-file there can be empty cells that have a huge font.
+This will cause the line heights of the cells to be large.
+You have to manually tweak this.
 
 ```{r}
 save_as_docx(
@@ -380,35 +460,54 @@ save_as_docx(
   path = 'final_table_exercises.docx'
 )
 
-# Make sure that you have {webshot2} and phantomJS installed. The latter can be installed via {webshot2}
+# Make sure that you have {webshot2} and phantomJS installed. 
+# flextable will give you an error and tell you what packages you need to install
 save_as_image(
   final_table_exercises,
   path = 'final_table_exercises.png',
   webshot = 'webshot2'
 )
 
-# Beware that in the output pptx file there can be empty cells that have huge font. 
-# This will cause the line heights of the cells to be large. 
-# You have to manually tweak this.
 save_as_pptx(
   final_table_exercises,
   path = 'final_table_exercises.pptx'
 )
 ```
 
-## Lesson 13: Heatmap columns
+## Lesson 12: Heatmap columns
+
+Turn the 1957 and the 2007 columns (without the average and maximum rows) into a heatmap.
+Your background color function should use a domain from zero to 85.
+Also make sure that texts that correspond to values below 50 use white text and black text otherwise.
 
 ```{r}
-bg_color_fct <- scales::col_numeric(palette = "viridis", domain = c(0, 30, 85), na.color = 'white')
+bg_color_fct <- scales::col_numeric(
+  palette = "viridis", domain = c(0, 85), na.color = 'white'
+)
 text_color_fct <- function(x) if_else(x < 50 & !is.na(x), 'white', 'black')
 
 ## Source needs to take the grouped data into account. That's why it's shifted by one.
 final_table_exercises |> 
-  bg(i = ~!(country %in% c('Average', 'Maximum')), j = c(2, 7), bg = bg_color_fct, source = c(3, 8)) |> 
-  color(i = ~!(country %in% c('Average', 'Maximum')), j = c(2, 7), color = text_color_fct, source = c(3, 8)) 
+  bg(
+    i = ~!(country %in% c('Average', 'Maximum')), 
+    j = c(2, 7), 
+    bg = bg_color_fct, 
+    source = c(3, 8)
+  ) |> 
+  color(
+    i = ~!(country %in% c('Average', 'Maximum')), 
+    j = c(2, 7), 
+    color = text_color_fct, 
+    source = c(3, 8)
+  ) 
 ```
 
-## Lesson 14: Sparklines
+## Lesson 13: Sparklines
+
+Instead of turning columns into a heat map, add another column to your table that contains a sparkline depicting the life expectancy over time for each country.
+If you don't want to create sparklines for the average and maximum rows, then use `value = as_paragraph('')` in a second call to the `compose()` function.
+
+**Hint:** If you want, you can manually change the width of the sparkline column with `width()` after `autofit()` was called.
 
 ```{r}
 life_exp_over_time <- gapminder_data |> 
@@ -416,8 +515,8 @@ life_exp_over_time <- gapminder_data |>
   group_by(country) |> 
   summarise(life_exps = list(life_exp))
 
-
-selected_countries |> 
+# Code from before is reprinted because colwidths and labels needs to be adjusted due to new column
+prev_table <- selected_countries |> 
   bind_rows(average_life_exps, max_life_exps) |> 
   full_join(life_exp_over_time) |> 
   arrange(continent, country %in% c('Average', 'Maximum')) |> 
@@ -436,7 +535,13 @@ selected_countries |>
   ) |> 
   align(i = 3, align = 'center', part = 'header') |> 
   colformat_double(digits = 2) |> 
-  hline(i = ~ (!is.na(continent) | country == 'Maximum' | lead(country == 'Maximum', 2, default = FALSE))) |> 
+  hline(
+    i = ~ (
+      !is.na(continent) | 
+        country == 'Maximum' | 
+        lead(country == 'Maximum', 2, default = FALSE)
+    )
+  ) |> 
   bg(i = ~ is.na(country), bg = 'dodgerblue4') |> 
   bg(i = ~ (country %in% c('Average', 'Maximum')), bg = 'grey95') |> 
   style(pr_t = fp_text(font.family = 'Source Sans Pro'), part = 'all') |> 
@@ -467,23 +572,147 @@ selected_countries |>
     part = 'header',
     i = 2,
     pr_t = fp_text(font.size = 11),
-    ### This part is added 
     pr_c = fp_cell(border = fp_border(width = 0, color = 'grey40'))
   ) |> 
   line_spacing(part= 'all', space = 0.75) |> 
-  ### This part is added 
   hline(part = 'header', i = 2, border = fp_border(width = 0)) |> 
   hline(part = 'header', i = 3, border = fp_border(width = 0)) |> 
-  border(i = 3, j = 2:7, border.bottom = fp_border(width = 1, color = 'grey40'), part = 'header') |> 
-  compose(i = ~ !(country %in% c('Average', 'Maximum') | is.na(country)), j = 'life_exps', value = as_paragraph(
-    plot_chunk(value = life_exps, type = 'line', col = 'dodgerblue4')
-  )) |> 
-  compose(i = ~ (country %in% c('Average', 'Maximum') | is.na(country)), j = 'life_exps', value = as_paragraph('')) |> 
-  autofit()
+  border(i = 3, j = 2:7, border.bottom = fp_border(width = 1, color = 'grey40'), part = 'header')
+
+
+prev_table |> 
+  compose(
+    i = ~ !(country %in% c('Average', 'Maximum') | is.na(country)), 
+    j = 'life_exps', 
+    value = as_paragraph(
+      plot_chunk(value = life_exps, type = 'line', col = 'dodgerblue4')
+    )
+  ) |> 
+  compose(
+    i = ~ (country %in% c('Average', 'Maximum') | is.na(country)), 
+    j = 'life_exps', 
+    value = as_paragraph('')
+  ) |> 
+  autofit() |> 
+  width(j = 'life_exps', width = 0.75)
 
 ```
 
-## Lesson 15: Add your own ggplot
+## Lesson 14: Add your own ggplot
 
-Redo previous with ggplot where there are dots at beginning and end of sparkline.
-Maybe with label
+Redo the table from the previous exercise but use ggplot to draw the sparklines.
+This time, also add small dots at beginning and end of each sparkline.
+
+**Hint:** If you want, you can manually change the width of the sparkline column with `width()` after `autofit()` was called.
+
+```{r}
+# Create function that builds ggplot
+create_gg_sparkline <- function(data) {
+  if (is.null(data)) {
+    return(ggplot())
+  }
+  ggplot() +
+    geom_line(
+      aes(x = seq_along(data), y = data), 
+      color = 'dodgerblue4',
+      linewidth = 1
+    ) +
+    geom_point(
+      aes(x =  seq_along(data) |> range(), y = range(data)),
+      size = 2,
+      color = 'dodgerblue4'
+    ) +
+    theme_void() +
+    scale_y_continuous(expand = expansion(mult = 0.5)) +
+    scale_x_continuous(expand = expansion(mult = 0.1))
+}
+
+# Merge data and build ggplots
+prepped_data_with_ggplots <- selected_countries |> 
+  bind_rows(average_life_exps, max_life_exps) |> 
+  full_join(life_exp_over_time) |> 
+  arrange(continent, country %in% c('Average', 'Maximum')) |> 
+  mutate(life_exps = map(life_exps, create_gg_sparkline))
+
+
+# Redo table again because data changes
+prev_table <- prepped_data_with_ggplots |>
+  as_grouped_data(
+    groups = 'continent'
+  ) |> 
+  as_flextable(hide_grouplabel = TRUE) |> 
+  set_header_labels(values = new_names) |> 
+  set_header_labels(life_exps = '') |> 
+  add_header_row(
+    values = c('', '50s-70s', '80s-20s', ''),
+    colwidths = c(1, 3, 3, 1)
+  ) |> 
+  add_header_lines(
+    values = c('Life expectancties over time', 'Data is courtesy of the {gapminder} R package')
+  ) |> 
+  align(i = 3, align = 'center', part = 'header') |> 
+  colformat_double(digits = 2) |> 
+  hline(
+    i = ~ (
+      !is.na(continent) | 
+        country == 'Maximum' | 
+        lead(country == 'Maximum', 2, default = FALSE)
+    )
+  ) |> 
+  bg(i = ~ is.na(country), bg = 'dodgerblue4') |> 
+  bg(i = ~ (country %in% c('Average', 'Maximum')), bg = 'grey95') |> 
+  style(pr_t = fp_text(font.family = 'Source Sans Pro'), part = 'all') |> 
+  bold(part = 'header', i = 3) |> 
+  style( ### group rows
+    i = ~ (is.na(country)),
+    pr_t = fp_text(
+      color = 'white',
+      bold = TRUE,
+      font.size = 12,
+    )
+  ) |> 
+  style( ### title
+    part = 'header',
+    i = 1,
+    pr_t = fp_text(
+      color = 'dodgerblue4',
+      font.size = 18,
+      font.family = 'Source Sans Pro',
+      bold = TRUE
+    ),
+    pr_c = fp_cell(
+      border.top = fp_border(width = 1.5, color = 'grey40'),
+      border.bottom = fp_border(width = 0, color = 'grey40')
+    )
+  ) |> 
+  style( #### subtitle
+    part = 'header',
+    i = 2,
+    pr_t = fp_text(font.size = 11),
+    pr_c = fp_cell(border = fp_border(width = 0, color = 'grey40'))
+  ) |> 
+  line_spacing(part= 'all', space = 0.75) |> 
+  hline(part = 'header', i = 2, border = fp_border(width = 0)) |> 
+  hline(part = 'header', i = 3, border = fp_border(width = 0)) |> 
+  border(i = 3, j = 2:7, border.bottom = fp_border(width = 1, color = 'grey40'), part = 'header')
+
+# Display charts with compose
+prev_table |> 
+  compose(
+    i = ~ !(country %in% c('Average', 'Maximum') | is.na(country)), 
+    j = 'life_exps', value = as_paragraph(
+      gg_chunk(
+        value = life_exps, 
+        width = 0.75,
+        height = 0.25
+      )
+    )
+  ) |> 
+  compose(
+    i = ~ (country %in% c('Average', 'Maximum') | is.na(country)), 
+    j = 'life_exps', 
+    value = as_paragraph('')
+  ) |> 
+  autofit() |> 
+  width(j = 'life_exps', width = 0.75)
+```
